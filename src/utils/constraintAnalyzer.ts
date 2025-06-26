@@ -24,12 +24,20 @@ export function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraint
     positionExclusions: new Map()
   };
 
+  // Track all letters we've seen and their states
+  const letterStates = new Map<string, Set<string>>();
+
   for (const history of guessHistory) {
     for (let i = 0; i < history.guess.length; i++) {
       const tile = history.guess[i];
       if (!tile.letter) continue;
 
       const letter = tile.letter.toUpperCase();
+      
+      if (!letterStates.has(letter)) {
+        letterStates.set(letter, new Set());
+      }
+      letterStates.get(letter)!.add(tile.state);
 
       switch (tile.state) {
         case 'correct':
@@ -43,10 +51,9 @@ export function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraint
           constraints.positionExclusions.get(i)!.add(letter);
           break;
         case 'absent':
-          // Only mark as absent if it's not correct or present elsewhere
-          const isCorrectElsewhere = Array.from(constraints.correctPositions.values()).includes(letter);
-          const isPresentElsewhere = constraints.presentLetters.has(letter);
-          if (!isCorrectElsewhere && !isPresentElsewhere) {
+          // Only mark as absent if we've never seen it as correct or present
+          const states = letterStates.get(letter) || new Set();
+          if (!states.has('correct') && !states.has('present')) {
             constraints.absentLetters.add(letter);
           }
           break;
@@ -54,15 +61,25 @@ export function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraint
     }
   }
 
+  console.log('Final constraints analysis:', {
+    correctPositions: Array.from(constraints.correctPositions.entries()),
+    presentLetters: Array.from(constraints.presentLetters),
+    absentLetters: Array.from(constraints.absentLetters),
+    positionExclusions: Array.from(constraints.positionExclusions.entries()).map(([pos, letters]) => [pos, Array.from(letters)])
+  });
+
   return constraints;
 }
 
 export function validateWordAgainstConstraints(word: string, constraints: WordConstraints): boolean {
   const wordUpper = word.toUpperCase();
+  
+  console.log(`Validating word "${wordUpper}" against constraints`);
 
   // Check correct positions
   for (const [position, letter] of constraints.correctPositions) {
     if (wordUpper[position] !== letter) {
+      console.log(`❌ ${wordUpper}: Wrong letter at position ${position}, expected ${letter}, got ${wordUpper[position]}`);
       return false;
     }
   }
@@ -70,6 +87,7 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   // Check present letters are in the word
   for (const letter of constraints.presentLetters) {
     if (!wordUpper.includes(letter)) {
+      console.log(`❌ ${wordUpper}: Missing present letter ${letter}`);
       return false;
     }
   }
@@ -77,6 +95,7 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   // Check present letters are NOT in their excluded positions
   for (const [position, excludedLetters] of constraints.positionExclusions) {
     if (position < wordUpper.length && excludedLetters.has(wordUpper[position])) {
+      console.log(`❌ ${wordUpper}: Letter ${wordUpper[position]} found at excluded position ${position}`);
       return false;
     }
   }
@@ -84,10 +103,12 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   // Check absent letters are not in the word
   for (const letter of constraints.absentLetters) {
     if (wordUpper.includes(letter)) {
+      console.log(`❌ ${wordUpper}: Contains absent letter ${letter}`);
       return false;
     }
   }
 
+  console.log(`✅ ${wordUpper}: Valid word!`);
   return true;
 }
 
