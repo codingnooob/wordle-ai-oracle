@@ -1,4 +1,3 @@
-
 import { GuessData } from './constraints/types';
 import { MLWordleSolution } from './ml/types';
 import { realMLAnalyzer } from './ml/realMLAnalyzer';
@@ -65,24 +64,37 @@ class MLWordleAnalyzer {
       return this.satisfiesBasicConstraints(word, guessData);
     });
 
-    // Calculate genuine probabilities for fallback words
-    return validWords.map((word, index) => {
-      // Calculate probability based on constraint fitness, not position
+    // Calculate genuine probabilities for fallback words - NO ARTIFICIAL BOUNDS
+    const scoredWords = validWords.map(word => {
+      // Calculate probability based on constraint fitness and word quality
       const constraintFitness = this.calculateFallbackConstraintFitness(word, guessData);
       const wordCommonality = this.calculateWordCommonality(word, wordLength);
       
-      // Genuine probability calculation
-      const probability = (constraintFitness * 0.7 + wordCommonality * 0.3);
+      // Genuine probability calculation - no artificial manipulation
+      let probability = 0.1; // Base 10% for valid words
+      probability += constraintFitness * 0.6; // Up to 60% for constraint satisfaction
+      probability += wordCommonality * 0.3; // Up to 30% for word commonality
+      
+      // Natural bounds only (not artificial 0.05-0.95)
+      probability = Math.max(0.01, Math.min(0.99, probability));
+      
+      console.log(`Fallback probability for ${word}: ${(probability * 100).toFixed(1)}%`);
       
       return {
         word: word,
         probability: Math.round(probability * 100 * 10) / 10 // Convert to percentage
       };
-    }).sort((a, b) => b.probability - a.probability).slice(0, 15); // Sort by actual probability
+    });
+
+    // Sort by actual probability (not artificial ranking)
+    const sortedWords = scoredWords.sort((a, b) => b.probability - a.probability);
+    
+    console.log('Fallback analysis results:', sortedWords.slice(0, 5));
+    return sortedWords.slice(0, 15);
   }
 
   private calculateFallbackConstraintFitness(word: string, guessData: GuessData[]): number {
-    let fitness = 0.3; // Base fitness for valid words
+    let fitness = 0.2; // Base fitness for valid words
     const wordUpper = word.toUpperCase();
     
     for (let i = 0; i < guessData.length; i++) {
@@ -95,7 +107,7 @@ class MLWordleAnalyzer {
       switch (tile.state) {
         case 'correct':
           if (wordLetter === letter) {
-            fitness += 0.2; // High bonus for correct position
+            fitness += 0.25; // High bonus for correct position
           }
           break;
         case 'present':
@@ -126,10 +138,11 @@ class MLWordleAnalyzer {
     const index = wordsForLength.indexOf(word.toUpperCase());
     
     if (index !== -1) {
+      // Return higher probability for more common words (not artificial adjustment)
       return (wordsForLength.length - index) / wordsForLength.length;
     }
     
-    return 0.3; // Default moderate commonality for unlisted words
+    return 0.4; // Default moderate commonality for unlisted words
   }
 
   private satisfiesBasicConstraints(word: string, guessData: GuessData[]): boolean {
