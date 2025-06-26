@@ -61,7 +61,7 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
   
   // For each present letter, verify it exists in valid positions
   for (const presentLetter of constraints.presentLetters) {
-    console.log(`Checking present letter: ${presentLetter}`);
+    console.log(`\nChecking present letter: ${presentLetter}`);
     
     // Find all positions where this letter appears in the word
     const letterPositions: number[] = [];
@@ -72,7 +72,7 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
     }
     
     if (letterPositions.length === 0) {
-      console.log(`❌ Letter ${presentLetter} not found in word`);
+      console.log(`❌ Letter ${presentLetter} not found in word "${word}"`);
       return false;
     }
     
@@ -86,17 +86,21 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
       const correctLetterAtPos = constraints.correctPositions.get(pos);
       const isOccupiedByDifferentCorrectLetter = correctLetterAtPos && correctLetterAtPos !== presentLetter;
       
-      console.log(`Position ${pos}: excluded=${isExcluded}, occupiedByDifferent=${isOccupiedByDifferentCorrectLetter}`);
+      console.log(`  Position ${pos}: letter='${word[pos]}', excluded=${isExcluded}, occupiedByDifferent=${isOccupiedByDifferentCorrectLetter}`);
+      console.log(`    excludedLettersAtPosition: ${excludedLettersAtPosition ? Array.from(excludedLettersAtPosition) : 'none'}`);
+      console.log(`    correctLetterAtPos: ${correctLetterAtPos || 'none'}`);
       
       if (!isExcluded && !isOccupiedByDifferentCorrectLetter) {
         hasValidPosition = true;
-        console.log(`✅ Letter ${presentLetter} has valid position at ${pos}`);
+        console.log(`  ✅ Letter ${presentLetter} has valid position at ${pos}`);
         break;
+      } else {
+        console.log(`  ❌ Position ${pos} is invalid for ${presentLetter}`);
       }
     }
     
     if (!hasValidPosition) {
-      console.log(`❌ Letter ${presentLetter} has no valid positions`);
+      console.log(`❌ Letter ${presentLetter} has no valid positions in "${word}"`);
       return false;
     }
   }
