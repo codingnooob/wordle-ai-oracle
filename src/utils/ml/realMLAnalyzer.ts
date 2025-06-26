@@ -1,5 +1,5 @@
 
-import { pipeline, Pipeline } from '@huggingface/transformers';
+import { pipeline } from '@huggingface/transformers';
 import { GuessData } from '../constraints/types';
 
 interface MLWordleSolution {
@@ -8,9 +8,9 @@ interface MLWordleSolution {
 }
 
 export class RealMLAnalyzer {
-  private textGenerator: Pipeline | null = null;
-  private textClassifier: Pipeline | null = null;
-  private wordValidator: Pipeline | null = null;
+  private textGenerator: any = null;
+  private textClassifier: any = null;
+  private wordValidator: any = null;
   private isInitialized = false;
   private webScrapedData: string[] = [];
 
@@ -23,22 +23,19 @@ export class RealMLAnalyzer {
       // Initialize text generation model for word prediction
       this.textGenerator = await pipeline(
         'text-generation',
-        'microsoft/DialoGPT-small',
-        { device: 'webgpu' }
+        'microsoft/DialoGPT-small'
       );
 
       // Initialize text classification for word validation
       this.textClassifier = await pipeline(
         'text-classification',
-        'distilbert-base-uncased',
-        { device: 'webgpu' }
+        'distilbert-base-uncased'
       );
 
       // Initialize feature extraction for word embeddings
       this.wordValidator = await pipeline(
         'feature-extraction',
-        'sentence-transformers/all-MiniLM-L6-v2',
-        { device: 'webgpu' }
+        'sentence-transformers/all-MiniLM-L6-v2'
       );
 
       console.log('ML models initialized successfully');
@@ -48,35 +45,9 @@ export class RealMLAnalyzer {
       this.startBackgroundScraping();
     } catch (error) {
       console.error('Failed to initialize ML models:', error);
-      // Fallback to CPU if WebGPU fails
-      await this.initializeFallback();
-    }
-  }
-
-  private async initializeFallback(): Promise<void> {
-    try {
-      console.log('Falling back to CPU models...');
-      
-      this.textGenerator = await pipeline(
-        'text-generation',
-        'microsoft/DialoGPT-small'
-      );
-
-      this.textClassifier = await pipeline(
-        'text-classification',
-        'distilbert-base-uncased'
-      );
-
-      this.wordValidator = await pipeline(
-        'feature-extraction',
-        'sentence-transformers/all-MiniLM-L6-v2'
-      );
-
+      // Set as initialized even if models fail to avoid infinite retry
       this.isInitialized = true;
       this.startBackgroundScraping();
-    } catch (error) {
-      console.error('Failed to initialize fallback models:', error);
-      throw error;
     }
   }
 
@@ -174,14 +145,14 @@ export class RealMLAnalyzer {
   }
 
   private async validateWords(words: string[]): Promise<string[]> {
-    if (!this.wordValidator) return words;
-
     const validWords: string[] = [];
 
     for (const word of words) {
       try {
         // Use embeddings to check if word is similar to known English words
-        const embedding = await this.wordValidator(word.toLowerCase());
+        if (this.wordValidator) {
+          const embedding = await this.wordValidator(word.toLowerCase());
+        }
         
         // Simple validation: check if the word looks like English
         const isValid = await this.isEnglishWord(word);
