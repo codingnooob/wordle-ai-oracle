@@ -94,13 +94,16 @@ class WordleAnalyzer {
     // Filter and score words
     const validWords: WordleSolution[] = [];
     let checkedCount = 0;
+    let debugCount = 0;
 
     for (const { word, frequency } of wordDatabase) {
       checkedCount++;
       const isValid = validateWordAgainstConstraints(word, constraints);
       
-      if (checkedCount <= 10 || potentialMatches.includes(word.toUpperCase())) { 
+      // Show detailed debugging for potential matches or first few words
+      if (debugCount < 5 || potentialMatches.includes(word.toUpperCase())) { 
         console.log(`Checking word "${word}":`, isValid);
+        debugCount++;
       }
       
       if (isValid) {
@@ -123,10 +126,11 @@ class WordleAnalyzer {
     if (validWords.length > 0) {
       console.log('Top solutions:', validWords.slice(0, 5));
     } else {
-      console.log('❌ No valid words found! This might indicate:');
+      console.log('❌ No valid words found! Possible reasons:');
       console.log('1. The constraints are too restrictive');
       console.log('2. The word database might not contain the target word');
-      console.log('3. There might be a logic error in constraint validation');
+      console.log('3. There might be conflicting constraints from multiple guesses');
+      console.log('4. Check if all present letters can be placed in valid positions');
     }
     
     return validWords.slice(0, 15);
