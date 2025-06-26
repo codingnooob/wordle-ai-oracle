@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,5 +100,32 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent text scaling on orientation change */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Prevent zoom on orientation change for iOS Safari */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Ensure smooth orientation transitions */
+  @media screen and (orientation: landscape) {
+    body {
+      height: 100vh;
+      overflow-x: hidden;
+    }
+  }
+
+  @media screen and (orientation: portrait) {
+    body {
+      height: auto;
+    }
   }
 }
