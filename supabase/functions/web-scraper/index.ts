@@ -11,16 +11,16 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('Starting web scraping process...');
+  console.log('Starting enhanced web scraping process with search integration...');
 
   try {
-    const { maxWords = 5000 } = await req.json().catch(() => ({}));
+    const { maxWords = 15000 } = await req.json().catch(() => ({})); // Increased from 5000
     
     const scraper = new WebScraper();
     const { words: allWords, results: scrapeResults } = await scraper.scrapeFromTargets(SCRAPING_TARGETS);
 
     // If we didn't get enough words from scraping, add fallback content
-    if (allWords.size < 1000) {
+    if (allWords.size < 2000) { // Increased threshold from 1000
       console.log('Adding fallback word content...');
       const fallbackWords = getFallbackWords();
       fallbackWords.forEach(word => allWords.add(word));
@@ -36,14 +36,14 @@ const handler = async (req: Request): Promise<Response> => {
       timestamp: new Date().toISOString()
     };
 
-    console.log(`Web scraping complete: ${finalWords.length} total words`);
+    console.log(`Enhanced web scraping complete: ${finalWords.length} total words from ${scrapeResults.length} sources`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Web scraping failed:', error);
+    console.error('Enhanced web scraping failed:', error);
     
     // Return fallback data if scraping completely fails
     const fallbackWords = getFallbackWords();

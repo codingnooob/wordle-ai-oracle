@@ -16,13 +16,14 @@ export class MLTrainingService {
   private wordQualityService = new WordQualityService();
 
   async startBackgroundTraining(): Promise<void> {
-    console.log('Starting background ML training service with real web scraping...');
+    console.log('Starting background ML training service with frequent web scraping...');
     
     await realMLAnalyzer.initialize();
 
+    // Check every 5 minutes instead of 30 seconds for more frequent updates
     this.trainingInterval = setInterval(() => {
       this.performBackgroundTraining();
-    }, 30000); // Check every 30 seconds
+    }, 5 * 60 * 1000);
 
     await this.performBackgroundTraining();
   }
@@ -31,39 +32,39 @@ export class MLTrainingService {
     if (this.isTraining) return;
     
     this.isTraining = true;
-    console.log('Performing background ML training with real web scraping...');
+    console.log('Performing background ML training with enhanced web scraping...');
 
     try {
       const cachedData = this.cacheService.getCachedData();
       
-      // Force fresh scraping if cache is expired or we want to grow the dataset
-      if (cachedData && Date.now() < cachedData.expiresAt && cachedData.totalWords > 1000) {
-        console.log(`Using cached scraped data: ${cachedData.totalWords} words`);
+      // With 30-minute cache, we'll refresh more frequently
+      if (cachedData && Date.now() < cachedData.expiresAt && cachedData.totalWords > 500) {
+        console.log(`Using cached scraped data: ${cachedData.totalWords} words (expires in ${Math.round((cachedData.expiresAt - Date.now()) / 60000)} minutes)`);
         this.trainingData = cachedData.words;
       } else {
-        console.log('Cache expired or insufficient data, performing fresh web scraping...');
+        console.log('Cache expired or insufficient data, performing fresh enhanced web scraping...');
         const scrapedData = await this.webScrapingService.performWebScraping();
         
         if (scrapedData) {
           this.trainingData = scrapedData.words;
           this.cacheService.cacheScrapedData(scrapedData);
           
-          console.log(`Real web scraping completed: ${scrapedData.totalWords} words`);
+          console.log(`Enhanced web scraping completed: ${scrapedData.totalWords} words`);
           
           if (scrapedData.fallback) {
             console.warn('Web scraping used fallback data due to network issues');
           } else {
-            console.log('Scraping results:', scrapedData.scrapeResults);
+            console.log('Enhanced scraping results:', scrapedData.scrapeResults);
           }
         } else {
           this.trainingData = this.fallbackDataService.getExpandedFallbackData();
-          console.warn(`Web scraping failed, using expanded fallback: ${this.trainingData.length} words`);
+          console.warn(`Enhanced web scraping failed, using expanded fallback: ${this.trainingData.length} words`);
         }
       }
       
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
-      console.log(`Training completed with ${this.trainingData.length} data points`);
+      console.log(`Training completed with ${this.trainingData.length} data points (refreshes every 30 minutes)`);
     } catch (error) {
       console.error('Background training failed:', error);
       

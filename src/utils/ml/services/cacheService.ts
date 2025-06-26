@@ -14,7 +14,7 @@ interface CachedScrapedData extends ScrapedData {
 
 export class CacheService {
   private readonly CACHE_KEY = 'ml_scraped_data';
-  private readonly CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
+  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes instead of 6 hours
 
   getCachedData(): CachedScrapedData | null {
     try {
@@ -43,7 +43,7 @@ export class CacheService {
       };
       
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(cachedData));
-      console.log(`Cached ${data.totalWords} words for 6 hours`);
+      console.log(`Cached ${data.totalWords} words for 30 minutes`);
     } catch (error) {
       console.error('Failed to cache scraped data:', error);
     }

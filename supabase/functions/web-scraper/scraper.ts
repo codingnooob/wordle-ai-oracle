@@ -1,14 +1,25 @@
 
 import { ScrapingTarget, ScrapeResult } from './types.ts';
 import { extractWordsFromHtml } from './wordValidator.ts';
+import { SearchService } from './searchService.ts';
 
 export class WebScraper {
-  async scrapeFromTargets(targets: ScrapingTarget[]): Promise<{ words: Set<string>; results: ScrapeResult[] }> {
+  private searchService = new SearchService();
+
+  async scrapeFromTargets(staticTargets: ScrapingTarget[]): Promise<{ words: Set<string>; results: ScrapeResult[] }> {
     const allWords = new Set<string>();
     const scrapeResults: ScrapeResult[] = [];
 
+    // Get additional targets from search
+    console.log('Finding additional word sources via search...');
+    const searchTargets = await this.searchService.findWordSources();
+    
+    // Combine static and search targets
+    const allTargets = [...staticTargets, ...searchTargets];
+    console.log(`Total scraping targets: ${allTargets.length} (${staticTargets.length} static + ${searchTargets.length} from search)`);
+
     // Scrape from each target
-    for (const target of targets) {
+    for (const target of allTargets) {
       try {
         console.log(`Scraping ${target.name}...`);
         
