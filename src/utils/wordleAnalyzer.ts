@@ -25,8 +25,14 @@ class WordleAnalyzer {
   }
 
   addGuess(guessData: GuessData[]) {
+    // Create a proper deep copy to prevent circular references
+    const deepCopyGuess = guessData.map(tile => ({
+      letter: tile.letter,
+      state: tile.state
+    }));
+
     const newGuess = {
-      guess: [...guessData], // Create a deep copy to avoid circular references
+      guess: deepCopyGuess,
       timestamp: Date.now()
     };
 
@@ -46,8 +52,12 @@ class WordleAnalyzer {
   }
 
   getHistory(): GuessHistory[] {
+    // Return proper deep copies to avoid mutations
     return this.guessHistory.map(h => ({
-      guess: [...h.guess], // Return copies to avoid mutations
+      guess: h.guess.map(tile => ({
+        letter: tile.letter,
+        state: tile.state
+      })),
       timestamp: h.timestamp
     }));
   }
