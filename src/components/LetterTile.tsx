@@ -50,7 +50,13 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
         style={{
           width: 'clamp(32px, 8vw, 64px)',
           height: 'clamp(32px, 8vw, 64px)',
-          fontSize: 'clamp(0.875rem, 3vw, 1.5rem)'
+          fontSize: 'clamp(0.5rem, 2vw, 1.25rem)',
+          padding: '0',
+          lineHeight: '1',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'visible'
         }}
         maxLength={1}
         readOnly
