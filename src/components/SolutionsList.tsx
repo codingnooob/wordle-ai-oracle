@@ -1,5 +1,5 @@
 
-import { Trophy, Target, Zap } from 'lucide-react';
+import { Trophy, Target, Brain, Zap } from 'lucide-react';
 
 interface SolutionsListProps {
   solutions: Array<{word: string, probability: number}>;
@@ -9,27 +9,27 @@ const SolutionsList = ({ solutions }: SolutionsListProps) => {
   const getIcon = (index: number) => {
     if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" />;
     if (index === 1) return <Target className="h-5 w-5 text-orange-500" />;
-    return <Zap className="h-5 w-5 text-blue-500" />;
+    return <Brain className="h-5 w-5 text-purple-500" />;
   };
 
   const getProbabilityColor = (probability: number) => {
-    if (probability >= 80) return 'text-green-600 bg-green-50';
-    if (probability >= 60) return 'text-yellow-600 bg-yellow-50';
-    if (probability >= 40) return 'text-orange-600 bg-orange-50';
-    return 'text-red-600 bg-red-50';
+    if (probability >= 70) return 'text-green-600 bg-green-50';
+    if (probability >= 50) return 'text-yellow-600 bg-yellow-50';
+    if (probability >= 30) return 'text-orange-600 bg-orange-50';
+    return 'text-purple-600 bg-purple-50';
   };
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-slate-700 flex items-center gap-2">
-        <Zap className="h-5 w-5 text-blue-500" />
-        AI Solutions
+        <Brain className="h-5 w-5 text-purple-500" />
+        ML Predictions
       </h2>
       
       {solutions.length === 0 ? (
         <div className="text-center py-8 text-slate-500">
-          <Target className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-          <p>Enter your guess and click "Find Solutions" to see AI predictions</p>
+          <Brain className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+          <p>Enter your guess and click "AI Predict" to see machine learning predictions</p>
         </div>
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">
