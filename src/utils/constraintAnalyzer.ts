@@ -112,6 +112,27 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   return true;
 }
 
+// Add a function to find example words that might work
+export function findPotentialMatches(constraints: WordConstraints): string[] {
+  const presentLetters = Array.from(constraints.presentLetters);
+  console.log(`Looking for words containing all letters: ${presentLetters.join(', ')}`);
+  
+  // Generate some potential permutations for debugging
+  if (presentLetters.length === 5) {
+    const examples = [
+      'CRUEL', 'LUCRE', 'ULCER', 'CLUER', 'RECLUS'
+    ].filter(word => {
+      const wordUpper = word.toUpperCase();
+      return presentLetters.every(letter => wordUpper.includes(letter));
+    });
+    
+    console.log('Potential example words to check:', examples);
+    return examples;
+  }
+  
+  return [];
+}
+
 export function calculateWordScore(word: string, constraints: WordConstraints, baseFrequency: number): number {
   let score = baseFrequency;
 

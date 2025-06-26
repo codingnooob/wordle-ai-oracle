@@ -4,6 +4,7 @@ import {
   analyzeConstraints, 
   validateWordAgainstConstraints, 
   calculateWordScore,
+  findPotentialMatches,
   GuessData,
   GuessHistory 
 } from './constraintAnalyzer';
@@ -74,6 +75,10 @@ class WordleAnalyzer {
     const constraints = analyzeConstraints(this.guessHistory);
     console.log('Generated constraints:', constraints);
 
+    // Find potential matches for debugging
+    const potentialMatches = findPotentialMatches(constraints);
+    console.log('Potential matches to look for:', potentialMatches);
+
     // Get word database for the specified length (now async)
     const wordDatabase = await getWordsForLength(wordLength);
     if (wordDatabase.length === 0) {
@@ -82,6 +87,9 @@ class WordleAnalyzer {
     }
 
     console.log(`Checking ${wordDatabase.length} words against constraints`);
+    
+    // Log first few words in database for debugging
+    console.log('First 10 words in database:', wordDatabase.slice(0, 10).map(w => w.word));
 
     // Filter and score words
     const validWords: WordleSolution[] = [];
@@ -91,7 +99,7 @@ class WordleAnalyzer {
       checkedCount++;
       const isValid = validateWordAgainstConstraints(word, constraints);
       
-      if (checkedCount <= 5) { // Log first few checks for debugging
+      if (checkedCount <= 10 || potentialMatches.includes(word.toUpperCase())) { 
         console.log(`Checking word "${word}":`, isValid);
       }
       
@@ -103,6 +111,8 @@ class WordleAnalyzer {
           word: word,
           probability: probability
         });
+        
+        console.log(`✅ Found valid word: ${word} with probability ${probability}%`);
       }
     }
 
@@ -112,6 +122,11 @@ class WordleAnalyzer {
     console.log(`Found ${validWords.length} valid words out of ${checkedCount} checked`);
     if (validWords.length > 0) {
       console.log('Top solutions:', validWords.slice(0, 5));
+    } else {
+      console.log('❌ No valid words found! This might indicate:');
+      console.log('1. The constraints are too restrictive');
+      console.log('2. The word database might not contain the target word');
+      console.log('3. There might be a logic error in constraint validation');
     }
     
     return validWords.slice(0, 15);
