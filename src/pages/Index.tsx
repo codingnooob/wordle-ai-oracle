@@ -25,21 +25,21 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 overflow-x-hidden">
-      <div className="w-full max-w-full px-3 sm:px-4 py-4">
-        <div className="max-w-2xl lg:max-w-4xl mx-auto">
-          <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="w-full px-2 sm:px-4 py-4">
+        <div className="max-w-sm sm:max-w-2xl xl:max-w-6xl mx-auto">
+          <div className="text-center mb-4 sm:mb-6 xl:mb-8">
+            <h1 className="text-2xl sm:text-3xl xl:text-4xl font-bold text-slate-800 mb-2">
               Wordle Solver
             </h1>
-            <p className="text-slate-600 text-base sm:text-lg">
+            <p className="text-slate-600 text-sm sm:text-base xl:text-lg">
               Enter your guess and let AI find the most likely solutions
             </p>
           </div>
           
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-            <div className="space-y-4 sm:space-y-6">
-              <Card className="p-4 sm:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+          <div className="grid gap-3 sm:gap-4 xl:gap-6 xl:grid-cols-2">
+            <div className="space-y-3 sm:space-y-4 xl:space-y-6">
+              <Card className="p-3 sm:p-4 xl:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
                 <WordLengthSelector 
                   wordLength={wordLength} 
                   setWordLength={setWordLength}
@@ -51,7 +51,7 @@ const Index = () => {
                 />
               </Card>
               
-              <Card className="p-4 sm:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <Card className="p-3 sm:p-4 xl:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
                 <WordleBoard 
                   wordLength={wordLength}
                   guessData={guessData}
@@ -64,7 +64,7 @@ const Index = () => {
             </div>
             
             <div>
-              <Card className="p-4 sm:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm h-fit">
+              <Card className="p-3 sm:p-4 xl:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm h-fit">
                 <SolutionsList solutions={solutions} analyzing={analyzing} />
               </Card>
             </div>
