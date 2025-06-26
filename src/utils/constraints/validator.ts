@@ -67,7 +67,7 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
     
     console.log(`Letter ${presentLetter} found at positions: [${letterPositions.join(', ')}]`);
     
-    // Get excluded positions for this letter - fix type issue
+    // Get excluded positions for this letter
     const excludedPositionsSet = constraints.positionExclusions.get(presentLetter);
     const excludedPositions = excludedPositionsSet ? Array.from(excludedPositionsSet) : [];
     
