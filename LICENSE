@@ -1,0 +1,35 @@
+
+GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, 19 November 2007
+
+Copyright (C) 2024 Wordly AI Oracle Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Additional Terms:
+
+1. Network Use: If you run a modified version of this program on a server 
+   and let other users communicate with it there, your server must also 
+   allow them to download the source code corresponding to the modified 
+   version running there.
+
+2. Commercial Use: This software may be used for commercial purposes under 
+   the terms of AGPLv3, provided that any network service using this code 
+   makes the complete source code available to all users.
+
+3. Attribution: When redistributing or using this software, you must 
+   preserve all copyright notices and provide clear attribution to the 
+   original authors.
+
+For the full license text, visit: https://www.gnu.org/licenses/agpl-3.0.html

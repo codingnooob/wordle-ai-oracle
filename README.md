@@ -1,73 +1,269 @@
-# Welcome to your Lovable project
 
-## Project info
+# Wordly AI Oracle 🎯
 
-**URL**: https://lovable.dev/projects/2b15ea5c-60e2-46f2-89fe-0eaa5371e700
+An advanced AI-powered Wordle solver that combines machine learning, constraint analysis, and dynamic word corpus generation to provide intelligent word suggestions and real-time game analysis.
 
-## How can I edit this code?
+![Wordly AI Oracle Demo](https://via.placeholder.com/800x400/2563eb/ffffff?text=Wordly+AI+Oracle+Demo)
 
-There are several ways of editing your application.
+## 🚀 Features
 
-**Use Lovable**
+### 🧠 Advanced AI Analysis
+- **Real-time ML Training**: Dynamic model training with 145K+ word corpus
+- **Constraint Validation**: Intelligent analysis of Wordle constraints (green/yellow/grey tiles)
+- **Probability Scoring**: Advanced algorithms to rank word suggestions by likelihood
+- **Pattern Recognition**: ML-powered pattern analysis for optimal guess selection
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2b15ea5c-60e2-46f2-89fe-0eaa5371e700) and start prompting.
+### 🔒 Enterprise Security
+- **Input Sanitization**: Comprehensive input validation and sanitization
+- **Rate Limiting**: Built-in protection against abuse
+- **Secure Logging**: Environment-aware logging with sensitive data protection
+- **XSS Prevention**: Advanced security measures for web scraping and user input
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🌐 Dynamic Word Corpus
+- **Web Scraping**: Real-time word collection from multiple sources
+- **Quality Filtering**: ML-powered word validation and quality assessment
+- **Corpus Expansion**: Continuous vocabulary expansion with 145K+ words
+- **Fallback Systems**: Robust fallback mechanisms for reliable operation
 
-**Use your preferred IDE**
+### 🎮 Interactive Interface
+- **Responsive Design**: Modern, mobile-first UI built with Tailwind CSS
+- **Real-time Feedback**: Instant visual feedback for constraint states
+- **Word Length Support**: Configurable word lengths (3-15 letters)
+- **Keyboard Integration**: Interactive virtual keyboard with constraint visualization
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Technology Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui, Radix UI
+- **ML/AI**: Hugging Face Transformers (@huggingface/transformers)
+- **Backend**: Supabase with Edge Functions
+- **State Management**: TanStack Query
+- **Build Tool**: Vite
+- **Deployment**: Vercel/Netlify ready
 
-Follow these steps:
+## 🏗️ Architecture
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Core Components
+- **RealMLAnalyzer**: Advanced ML analysis engine
+- **WordGenerator**: AI-powered word suggestion system
+- **ConstraintValidator**: Intelligent constraint validation
+- **SecurityUtils**: Comprehensive security layer
+- **WebScrapingService**: Dynamic corpus expansion
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### ML Pipeline
+1. **Data Collection**: Web scraping from multiple sources
+2. **Quality Assessment**: ML-powered word validation
+3. **Corpus Training**: Real-time model training
+4. **Constraint Analysis**: Pattern recognition and scoring
+5. **Suggestion Generation**: Probability-based word ranking
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🚀 Quick Start
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Prerequisites
+- Node.js 18+ and npm
+- Supabase account (for backend services)
+- Git
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/wordly-ai-oracle.git
+cd wordly-ai-oracle
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Environment setup**
+```bash
+cp .env.example .env.local
+```
+
+4. **Configure environment variables**
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+OPENAI_API_KEY=your_openai_api_key  # Optional for enhanced ML features
+```
+
+5. **Start development server**
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Visit `http://localhost:8080` to see the application.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🏢 Self-Hosting Guide
 
-**Use GitHub Codespaces**
+### Option 1: Vercel Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Connect your repository to Vercel**
+2. **Configure environment variables in Vercel dashboard**
+3. **Deploy with automatic builds**
 
-## What technologies are used for this project?
+```bash
+# Optional: Use Vercel CLI
+npm i -g vercel
+vercel --prod
+```
 
-This project is built with:
+### Option 2: Netlify Deployment
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Connect repository to Netlify**
+2. **Set build command**: `npm run build`
+3. **Set publish directory**: `dist`
+4. **Configure environment variables**
 
-## How can I deploy this project?
+### Option 3: Manual Server Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/2b15ea5c-60e2-46f2-89fe-0eaa5371e700) and click on Share -> Publish.
+```bash
+# Build the application
+npm run build
 
-## Can I connect a custom domain to my Lovable project?
+# Serve the dist folder with your preferred web server
+# Example with nginx, apache, or serve
+npx serve -s dist -l 3000
+```
 
-Yes, you can!
+### Supabase Setup
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. **Create a new Supabase project**
+2. **Set up the database schema** (if using custom tables)
+3. **Deploy edge functions**:
+```bash
+supabase functions deploy analyze-wordle
+supabase functions deploy web-scraper
+```
+4. **Configure secrets**:
+```bash
+supabase secrets set OPENAI_API_KEY=your_key
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Docker Deployment (Advanced)
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npx", "serve", "-s", "dist", "-l", "3000"]
+```
+
+## 🎮 Usage
+
+### Basic Wordle Solving
+1. **Select word length** (default: 5 letters)
+2. **Enter your guesses** as you make them in Wordle
+3. **Mark constraints**: Green (correct), Yellow (wrong position), Grey (not in word)
+4. **Get AI suggestions** ranked by probability
+5. **Analyze patterns** with ML insights
+
+### Advanced Features
+- **Real-time Analysis**: Watch as the AI learns from your constraints
+- **Corpus Training**: Enable dynamic vocabulary expansion
+- **Security Mode**: Enhanced input validation for production use
+- **Debug Mode**: Detailed logging for development
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_SUPABASE_URL` | Supabase project URL | Yes |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Yes |
+| `OPENAI_API_KEY` | OpenAI API key for enhanced ML | No |
+| `NODE_ENV` | Environment (development/production) | Auto |
+
+### Customization
+
+The application supports extensive customization:
+- **Word lengths**: 3-15 letters supported
+- **ML models**: Configurable Hugging Face models
+- **Security levels**: Adjustable validation strictness
+- **UI themes**: Built-in dark/light mode support
+
+## 🧪 Development
+
+### Project Structure
+```
+src/
+├── components/          # React components
+├── utils/              # Utility functions
+├── ml/                 # ML services and models
+├── security/           # Security utilities
+├── integrations/       # External service integrations
+└── pages/              # Application pages
+```
+
+### Key Files
+- `src/utils/ml/realMLAnalyzer.ts` - Core ML analysis engine
+- `src/utils/security/securityUtils.ts` - Security layer
+- `src/components/WordInput.tsx` - Main input component
+- `supabase/functions/` - Edge functions for backend processing
+
+### Testing
+```bash
+npm run test          # Run test suite
+npm run test:coverage # Coverage report
+npm run lint          # Code linting
+npm run type-check    # TypeScript validation
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes with tests
+4. Commit: `git commit -m 'Add amazing feature'`
+5. Push: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3). See the [LICENSE](LICENSE) file for details.
+
+### What this means:
+- ✅ You can use, modify, and distribute this software
+- ✅ You can use it for commercial purposes
+- ❗ You must provide source code for any network use
+- ❗ Any modifications must also be AGPLv3 licensed
+- ❗ You must include license and copyright notices
+
+## 🔗 Links
+
+- **Live Demo**: [https://wordly-ai-oracle.vercel.app](https://wordly-ai-oracle.vercel.app)
+- **Documentation**: [https://docs.wordly-ai-oracle.dev](https://docs.wordly-ai-oracle.dev)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/wordly-ai-oracle/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/wordly-ai-oracle/discussions)
+
+## 🙏 Acknowledgments
+
+- **Wordle** by Josh Wardle for the original game concept
+- **Hugging Face** for the transformer models
+- **Supabase** for the backend infrastructure
+- **Vercel** for hosting and deployment
+- **shadcn/ui** for the beautiful UI components
+
+## 📊 Stats
+
+- **145,000+** words in dynamic corpus
+- **Real-time** ML training and analysis
+- **Enterprise-grade** security implementation
+- **Mobile-first** responsive design
+- **Open source** AGPLv3 licensed
+
+---
+
+**Built with ❤️ and AI** - Showcasing the power of modern web development, machine learning, and open source collaboration.
