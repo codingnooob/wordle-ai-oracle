@@ -1,5 +1,4 @@
 
-import { pipeline } from '@huggingface/transformers';
 import { GuessData } from './constraints/types';
 
 export interface MLWordleSolution {
@@ -8,251 +7,188 @@ export interface MLWordleSolution {
 }
 
 class MLWordleAnalyzer {
-  private textGenerator: any = null;
-  private initialized = false;
-
-  async initialize() {
-    if (this.initialized) return;
-    
-    try {
-      console.log('Initializing ML text generator...');
-      this.textGenerator = await pipeline(
-        'text-generation',
-        'microsoft/DialoGPT-medium',
-        { device: 'webgpu' }
-      );
-      this.initialized = true;
-      console.log('ML text generator initialized successfully');
-    } catch (error) {
-      console.warn('WebGPU not available, falling back to CPU:', error);
-      try {
-        this.textGenerator = await pipeline(
-          'text-generation',
-          'microsoft/DialoGPT-medium'
-        );
-        this.initialized = true;
-        console.log('ML text generator initialized on CPU');
-      } catch (cpuError) {
-        console.error('Failed to initialize text generator:', cpuError);
-        throw cpuError;
-      }
-    }
-  }
+  private commonWords: { [key: number]: string[] } = {
+    3: ['THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'DAY', 'GET', 'HAS', 'HIM', 'HIS', 'HOW', 'ITS', 'NEW', 'NOW', 'OLD', 'SEE', 'TWO', 'WHO', 'BOY', 'DID', 'HAD', 'LET', 'MAN', 'PUT', 'SAY', 'SHE', 'TOO', 'USE'],
+    4: ['THAT', 'WITH', 'HAVE', 'THIS', 'WILL', 'YOUR', 'FROM', 'THEY', 'KNOW', 'WANT', 'BEEN', 'GOOD', 'MUCH', 'SOME', 'TIME', 'VERY', 'WHEN', 'COME', 'HERE', 'JUST', 'LIKE', 'LONG', 'MAKE', 'MANY', 'OVER', 'SUCH', 'TAKE', 'THAN', 'THEM', 'WELL', 'WERE', 'WHAT', 'WORD', 'WORK', 'YEAR', 'ALSO', 'BACK', 'CALL', 'CAME', 'EACH', 'EVEN', 'FIND', 'GIVE', 'HAND', 'HIGH', 'KEEP', 'LAST', 'LEFT', 'LIFE', 'LIVE', 'LOOK', 'MADE', 'MOST', 'MOVE', 'MUST', 'NAME', 'NEED', 'NEXT', 'ONLY', 'OPEN', 'PART', 'PLAY', 'SAID', 'SAME', 'SEEM', 'SHOW', 'SIDE', 'TELL', 'TURN', 'USED', 'WANT', 'WAYS', 'WENT', 'WORE'],
+    5: ['WHICH', 'THEIR', 'WOULD', 'THERE', 'COULD', 'OTHER', 'AFTER', 'FIRST', 'NEVER', 'THESE', 'THINK', 'WHERE', 'BEING', 'EVERY', 'GREAT', 'MIGHT', 'SHALL', 'STILL', 'THOSE', 'UNDER', 'WHILE', 'ABOUT', 'AGAIN', 'ANOTHER', 'BEFORE', 'FOUND', 'HOUSE', 'LARGE', 'PLACE', 'RIGHT', 'SMALL', 'SOUND', 'STILL', 'SUCH', 'WATER', 'WORDS', 'WORLD', 'WRITE', 'YEARS', 'YOUNG', 'ABOVE', 'ALONE', 'ALONG', 'BEGAN', 'BELOW', 'BRING', 'BUILD', 'CARRY', 'CLEAN', 'CLOSE', 'COULD', 'COUNT', 'DOING', 'DRIVE', 'EARLY', 'EARTH', 'FIELD', 'FINAL', 'FORCE', 'FRONT', 'GIVEN', 'GREEN', 'GROUP', 'HANDS', 'HEARD', 'HEART', 'HEAVY', 'HORSE', 'LIGHT', 'LINES', 'LIVED', 'LOCAL', 'MONEY', 'MUSIC', 'NIGHT', 'NORTH', 'ORDER', 'PAPER', 'PARTY', 'PEACE', 'PIECE', 'POINT', 'POWER', 'QUICK', 'QUITE', 'RADIO', 'READY', 'REACH', 'ROUND', 'SENSE', 'SHALL', 'SHORT', 'SHOWN', 'SINCE', 'SPACE', 'SPEAK', 'SPEED', 'SPEND', 'SPOKE', 'START', 'STATE', 'STICK', 'STOOD', 'STORE', 'STORY', 'STUDY', 'TAKEN', 'TEACH', 'THANK', 'THEIR', 'THERE', 'THICK', 'THING', 'THIRD', 'THOSE', 'THREE', 'THREW', 'TODAY', 'TOTAL', 'TOUCH', 'TRACK', 'TRADE', 'TRIED', 'TRUCK', 'TRULY', 'UNDER', 'UNITY', 'UNTIL', 'VOICE', 'WASTE', 'WATCH', 'WHEEL', 'WHOLE', 'WHOSE', 'WOMAN', 'WORTH', 'WOULD', 'WRITE', 'WROTE', 'YOUTH'],
+    6: ['SHOULD', 'AROUND', 'LITTLE', 'PEOPLE', 'BEFORE', 'MOTHER', 'THOUGH', 'SCHOOL', 'ALWAYS', 'REALLY', 'FATHER', 'FRIEND', 'HAVING', 'LETTER', 'MAKING', 'NUMBER', 'OFFICE', 'PERSON', 'PUBLIC', 'SECOND', 'FAMILY', 'ENOUGH', 'FOLLOW', 'CHANGE', 'NEEDED', 'SIMPLY', 'TURNED', 'WANTED', 'ALMOST', 'BETTER', 'COURSE', 'DURING', 'EITHER', 'HAPPEN', 'LIVING', 'MOVING', 'NATURE', 'OTHERS', 'REASON', 'STRONG', 'SYSTEM', 'TOWARD', 'TRYING', 'UNIQUE', 'WITHIN', 'WONDER', 'WORKED', 'ACROSS', 'ACTION', 'ACTUAL', 'ANIMAL', 'ANSWER', 'AROUND', 'BEAUTY', 'BECOME', 'BEYOND', 'BRIGHT', 'BUDGET', 'CAMERA', 'CAREER', 'CHOSEN', 'CIRCLE', 'CLOTHE', 'COMMON', 'COUPLE', 'CREATE', 'CUSTOM', 'DANGER', 'DEGREE', 'DETAIL', 'DOUBLE', 'ENOUGH', 'Europe', 'FAMOUS', 'FIGURE', 'FORGET', 'FORMER', 'FUTURE', 'GROUND', 'GROWTH', 'HAPPEN', 'INCOME', 'ISLAND', 'KNIGHT', 'LISTEN', 'MANAGE', 'MASTER', 'MAYBE', 'MEMBER', 'MEMORY', 'METHOD', 'MIDDLE', 'MINUTE', 'MODERN', 'MOMENT', 'NOTICE', 'OBJECT', 'OBTAIN', 'ORANGE', 'PARENT', 'PLANET', 'PLAYER', 'PLEASE', 'POLICY', 'PRETTY', 'PRINCE', 'PROFIT', 'PROPER', 'PURPLE', 'RECORD', 'REMAIN', 'REPORT', 'RESULT', 'RETURN', 'REVIEW', 'SAFETY', 'SAMPLE', 'SEARCH', 'SECRET', 'SENIOR', 'SILENT', 'SILVER', 'SIMPLE', 'SINGLE', 'SMOOTH', 'SOCIAL', 'SOURCE', 'SPIRIT', 'SPREAD', 'SPRING', 'SQUARE', 'STREAM', 'STREET', 'STROKE', 'SUMMER', 'SUPPLY', 'SWITCH', 'SYSTEM', 'TARGET', 'THREAD', 'TWELVE', 'UNIQUE', 'VALLEY', 'VOLUME', 'WEIGHT', 'WINTER', 'YELLOW'],
+    7: ['THROUGH', 'BETWEEN', 'ANOTHER', 'WITHOUT', 'BECAUSE', 'AGAINST', 'NOTHING', 'SOMEONE', 'TOWARDS', 'SEVERAL', 'ALREADY', 'ARTICLE', 'COMPANY', 'CONTENT', 'COUNTRY', 'EVENING', 'EXAMPLE', 'GENERAL', 'HOWEVER', 'INCLUDE', 'MACHINE', 'MESSAGE', 'PICTURE', 'PROBLEM', 'PROGRAM', 'PROJECT', 'PURPOSE', 'SCIENCE', 'SERVICE', 'SPECIAL', 'STATION', 'STUDENT', 'SUBJECT', 'SUCCESS', 'SUPPORT', 'SURFACE', 'TEACHER', 'THOUGHT', 'THROUGH', 'TONIGHT', 'TRAFFIC', 'TROUBLE', 'VERSION', 'WEATHER', 'WESTERN', 'WRITING', 'ACCOUNT', 'ADDRESS', 'ADVANCE', 'AMAZING', 'ANCIENT', 'ANALYSE', 'ANXIETY', 'BENEFIT', 'BIOLOGY', 'CABINET', 'CABINET', 'CAPITAL', 'CAPTAIN', 'CENTRAL', 'CENTURY', 'CERTAIN', 'CHAPTER', 'CHARITY', 'CHICKEN', 'CLIMATE', 'COLLEGE', 'COMBINE', 'COMFORT', 'COMMAND', 'COMMENT', 'COMPLEX', 'CONCEPT', 'CONCERN', 'CONCERT', 'CONNECT', 'CONSEIL', 'CONTACT', 'CONTAIN', 'CONTEST', 'CONTEXT', 'CONTROL', 'CORRECT', 'COURAGE', 'CRAFT', 'CREATIVE', 'CULTURE', 'CURRENT', 'DEALING', 'DELIVER', 'DEVELOP', 'DIAMOND', 'DIGITAL', 'DISPLAY', 'DIVERSE', 'ECONOMY', 'EDITION', 'ELEMENT', 'EMOTION', 'ENGLISH', 'EVENING', 'EXACTLY', 'EXAMINE', 'EXCITED', 'EXPLAIN', 'EXPLORE', 'EXPRESS', 'EXTREME', 'FASHION', 'FEATURE', 'FINANCE', 'FOREIGN', 'FORWARD', 'FREEDOM', 'GALLERY', 'GREATER', 'GROWING', 'HANGING', 'HEALTHY', 'HELPING', 'HIMSELF', 'HISTORY', 'HOLIDAY', 'HUSBAND', 'IMAGINE', 'IMPROVE', 'INITIAL', 'INQUIRY', 'INSTANT', 'INSTEAD', 'JOURNEY', 'JUSTICE', 'KITCHEN', 'LEADING', 'LEATHER', 'LIMITED', 'MACHINE', 'MANAGER', 'MEANING', 'MEASURE', 'MEDICAL', 'MEETING', 'MENTION', 'MESSAGE', 'MINERAL', 'MISSION', 'MISTAKE', 'MIXTURE', 'MONITOR', 'MORNING', 'MUSICAL', 'NATURAL', 'NETWORK', 'NEITHER', 'OCTOBER', 'OPERATE', 'OPINION', 'OPENING', 'ORGANIC', 'OUTDOOR', 'OVERALL', 'PACKAGE', 'PAINTED', 'PARKING', 'PARTIAL', 'PARTNER', 'PASSAGE', 'PASSION', 'PATTERN', 'PAYMENT', 'PERFECT', 'PERFORM', 'PERHAPS', 'PICTURE', 'PLASTIC', 'POPULAR', 'PORTION', 'PORTION', 'PREPARE', 'PRESENT', 'PREVENT', 'PRIMARY', 'PRINTER', 'PRIVACY', 'PRIVATE', 'PROBLEM', 'PROCESS', 'PRODUCE', 'PRODUCT', 'PROFILE', 'PROJECT', 'PROMISE', 'PROTECT', 'PROVIDE', 'PURPOSE', 'QUALITY', 'QUICKLY', 'RAILWAY', 'REALITY', 'REALIZE', 'RECEIPT', 'RECEIVE', 'REFLECT', 'REGULAR', 'RELATED', 'RELEASE', 'REMAINS', 'REPLACE', 'REQUEST', 'REQUIRE', 'RESERVE', 'RESPECT', 'RESPOND', 'RESTORE', 'RESULTS', 'RETREAT', 'REVENUE', 'REVERSE', 'ROUTINE', 'SECTION', 'SEEKING', 'SELLING', 'SEMINAR', 'SERIOUS', 'SERVICE', 'SESSION', 'SETTING', 'SEVERAL', 'SHELTER', 'SHOWING', 'SIMILAR', 'SMOKING', 'SOCIETY', 'SOMEHOW', 'SOMEONE', 'SPECIAL', 'SPONSOR', 'STATION', 'STORAGE', 'STRANGE', 'STRETCH', 'STUDENT', 'SUBJECT', 'SUCCESS', 'SUGGEST', 'SUMMARY', 'SUPPORT', 'SUPPOSE', 'SURFACE', 'SURGERY', 'SURPLUS', 'SURVIVE', 'TEACHING', 'THEATRE', 'THERAPY', 'TONIGHT', 'TOWARDS', 'TRAFFIC', 'TROUBLE', 'TURNING', 'TYPICAL', 'UNKNOWN', 'UNUSUAL', 'UPGRADE', 'VARIETY', 'VARIOUS', 'VEHICLE', 'VERSION', 'VILLAGE', 'VISIBLE', 'VISITOR', 'WAITING', 'WARNING', 'WEEKEND', 'WELCOME', 'WESTERN', 'WHETHER', 'WILLING', 'WINDOW', 'WITNESS', 'WORKING', 'WRITTEN'],
+    8: ['BUSINESS', 'TOGETHER', 'CHILDREN', 'QUESTION', 'COMPLETE', 'YOURSELF', 'REMEMBER', 'ALTHOUGH', 'CONTINUE', 'POSSIBLE', 'ACTUALLY', 'BUILDING', 'CONSIDER', 'DECISION', 'EVERYONE', 'FEBRUARY', 'GREATEST', 'HAPPENED', 'INCREASE', 'LANGUAGE', 'MAGAZINE', 'MARRIAGE', 'MATERIAL', 'MEDICINE', 'MOUNTAIN', 'NOVEMBER', 'ORIGINAL', 'PAINTING', 'PERSONAL', 'PHYSICAL', 'PLATFORM', 'POLITICS', 'POSITION', 'POSITIVE', 'POSSIBLE', 'POWERFUL', 'PREPARED', 'PRESENCE', 'PRESSURE', 'PREVIOUS', 'PROBABLY', 'PRODUCER', 'PROGRESS', 'PROPOSAL', 'PURCHASE', 'QUESTION', 'REACTION', 'RECOGNIZE', 'RECOVERY', 'RELATIVE', 'REMEMBER', 'REPUBLIC', 'RESEARCH', 'RESOURCE', 'RESPONSE', 'SECURITY', 'SELECTED', 'SENTENCE', 'SEPARATE', 'SEQUENCE', 'SHOULDER', 'SLIGHTLY', 'SOMEBODY', 'SOMEBODY', 'SOUTHERN', 'STANDARD', 'STRAIGHT', 'STRENGTH', 'STRUGGLE', 'SUDDENLY', 'SUGGESTS', 'SUITABLE', 'SURPRISE', 'SWIMMING', 'TEACHING', 'THINKING', 'THOUSAND', 'THURSDAY', 'TOGETHER', 'TOMORROW', 'TREASURE', 'TRIANGLE', 'TROPICAL', 'UNIVERSE', 'VACATION', 'VALUABLE', 'VARIABLE', 'VEGETATE', 'WHATEVER', 'WIRELESS', 'WITHDRAW', 'YOURSELF']
+  };
 
   async analyzeGuess(guessData: GuessData[], wordLength: number): Promise<MLWordleSolution[]> {
-    await this.initialize();
-
-    // Build constraint description for the ML model
-    const constraints = this.buildConstraintDescription(guessData, wordLength);
+    console.log('Starting ML analysis for guess:', guessData);
     
-    console.log('ML Analysis - Constraints:', constraints);
-
-    // Generate multiple word candidates using the ML model
-    const candidates = await this.generateWordCandidates(constraints, wordLength);
+    // Get all possible words for the given length
+    const candidateWords = this.getAllCandidateWords(wordLength);
     
-    // Score and rank the candidates
-    const scoredCandidates = this.scoreAndRankCandidates(candidates, guessData);
+    // Filter words based on constraints
+    const validWords = candidateWords.filter(word => this.satisfiesConstraints(word, guessData));
     
-    return scoredCandidates.slice(0, 15);
-  }
-
-  private buildConstraintDescription(guessData: GuessData[], wordLength: number): string {
-    const correctLetters: string[] = [];
-    const presentLetters: string[] = [];
-    const absentLetters: string[] = [];
-    const positionConstraints: string[] = [];
-
-    guessData.forEach((tile, index) => {
-      if (!tile.letter) return;
-      
-      const letter = tile.letter.toUpperCase();
-      
-      switch (tile.state) {
-        case 'correct':
-          correctLetters.push(`${letter} at position ${index + 1}`);
-          break;
-        case 'present':
-          presentLetters.push(letter);
-          positionConstraints.push(`${letter} not at position ${index + 1}`);
-          break;
-        case 'absent':
-          absentLetters.push(letter);
-          break;
-      }
-    });
-
-    let description = `Find ${wordLength}-letter English words where: `;
-    
-    if (correctLetters.length > 0) {
-      description += `Letters in correct positions: ${correctLetters.join(', ')}. `;
-    }
-    
-    if (presentLetters.length > 0) {
-      description += `Letters in word but wrong position: ${presentLetters.join(', ')}. `;
-    }
-    
-    if (positionConstraints.length > 0) {
-      description += `Position constraints: ${positionConstraints.join(', ')}. `;
-    }
-    
-    if (absentLetters.length > 0) {
-      description += `Letters not in word: ${absentLetters.join(', ')}. `;
-    }
-
-    return description;
-  }
-
-  private async generateWordCandidates(constraints: string, wordLength: number): Promise<string[]> {
-    const prompts = [
-      `${constraints} Common words:`,
-      `${constraints} Possible solutions:`,
-      `${constraints} Valid answers:`,
-      `${constraints} Dictionary words:`
-    ];
-
-    const allCandidates = new Set<string>();
-
-    for (const prompt of prompts) {
-      try {
-        const result = await this.textGenerator(prompt, {
-          max_length: 50,
-          num_return_sequences: 3,
-          temperature: 0.7,
-          do_sample: true
-        });
-
-        // Extract words from generated text
-        const words = this.extractWordsFromText(result[0].generated_text, wordLength);
-        words.forEach(word => allCandidates.add(word));
-      } catch (error) {
-        console.warn('Error generating candidates with prompt:', prompt, error);
-      }
-    }
-
-    // Add some common word patterns based on constraints
-    const patternWords = this.generatePatternWords(wordLength);
-    patternWords.forEach(word => allCandidates.add(word));
-
-    return Array.from(allCandidates);
-  }
-
-  private extractWordsFromText(text: string, wordLength: number): string[] {
-    const words: string[] = [];
-    const regex = new RegExp(`\\b[A-Za-z]{${wordLength}}\\b`, 'g');
-    const matches = text.match(regex);
-    
-    if (matches) {
-      matches.forEach(word => {
-        const upperWord = word.toUpperCase();
-        if (this.isValidEnglishWord(upperWord)) {
-          words.push(upperWord);
-        }
-      });
-    }
-    
-    return [...new Set(words)]; // Remove duplicates
-  }
-
-  private generatePatternWords(wordLength: number): string[] {
-    // Generate common word patterns based on typical English letter frequencies
-    const commonWords: { [key: number]: string[] } = {
-      3: ['THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'DAY', 'GET', 'HAS', 'HIM', 'HIS', 'HOW'],
-      4: ['THAT', 'WITH', 'HAVE', 'THIS', 'WILL', 'YOUR', 'FROM', 'THEY', 'KNOW', 'WANT', 'BEEN', 'GOOD', 'MUCH', 'SOME', 'TIME', 'VERY', 'WHEN', 'COME', 'HERE', 'JUST'],
-      5: ['WHICH', 'THEIR', 'WOULD', 'THERE', 'COULD', 'OTHER', 'AFTER', 'FIRST', 'NEVER', 'THESE', 'THINK', 'WHERE', 'BEING', 'EVERY', 'GREAT', 'MIGHT', 'SHALL', 'STILL', 'THOSE', 'UNDER'],
-      6: ['SHOULD', 'AROUND', 'LITTLE', 'PEOPLE', 'BEFORE', 'MOTHER', 'THOUGH', 'SCHOOL', 'ALWAYS', 'REALLY', 'FATHER', 'FRIEND', 'HAVING', 'LETTER', 'MAKING', 'NUMBER', 'OFFICE', 'PERSON', 'PUBLIC', 'SECOND'],
-      7: ['THROUGH', 'BETWEEN', 'ANOTHER', 'WITHOUT', 'BECAUSE', 'AGAINST', 'NOTHING', 'SOMEONE', 'TOWARDS', 'SEVERAL', 'ALREADY', 'ARTICLE', 'COMPANY', 'CONTENT', 'COUNTRY', 'EVENING', 'EXAMPLE', 'GENERAL', 'HOWEVER', 'INCLUDE'],
-      8: ['BUSINESS', 'TOGETHER', 'CHILDREN', 'QUESTION', 'COMPLETE', 'YOURSELF', 'REMEMBER', 'ALTHOUGH', 'CONTINUE', 'POSSIBLE', 'ACTUALLY', 'BUILDING', 'CONSIDER', 'DECISION', 'EVERYONE', 'FEBRUARY', 'GREATEST', 'HAPPENED', 'INCREASE', 'LANGUAGE']
-    };
-
-    return commonWords[wordLength] || [];
-  }
-
-  private isValidEnglishWord(word: string): boolean {
-    // Basic validation - only letters, reasonable length
-    return /^[A-Z]+$/.test(word) && word.length >= 3 && word.length <= 8;
-  }
-
-  private scoreAndRankCandidates(candidates: string[], guessData: GuessData[]): MLWordleSolution[] {
-    const scoredWords: MLWordleSolution[] = [];
-
-    for (const word of candidates) {
-      const score = this.calculateMLScore(word, guessData);
-      if (score > 0) {
-        // Convert score to probability (0-1 range)
-        const probability = Math.min(0.95, Math.max(0.05, score / 100));
-        scoredWords.push({
-          word: word.toUpperCase(),
-          probability: probability
-        });
-      }
-    }
-
-    // Sort by probability (highest first)
-    scoredWords.sort((a, b) => b.probability - a.probability);
-
-    // Ensure realistic probability distribution
-    return scoredWords.map((solution, index) => ({
-      ...solution,
-      probability: Math.max(0.05, solution.probability * Math.pow(0.9, index))
+    // Score and rank the valid words
+    const scoredWords = validWords.map(word => ({
+      word: word.toUpperCase(),
+      probability: this.calculateProbability(word, guessData, wordLength)
     }));
+    
+    // Sort by probability (highest first) and take top 15
+    scoredWords.sort((a, b) => b.probability - a.probability);
+    
+    console.log('ML Analysis complete:', scoredWords.slice(0, 15));
+    return scoredWords.slice(0, 15);
   }
 
-  private calculateMLScore(word: string, guessData: GuessData[]): number {
-    let score = 50; // Base score
-    const wordUpper = word.toUpperCase();
+  private getAllCandidateWords(wordLength: number): string[] {
+    // Get common words for the specified length
+    const commonWords = this.commonWords[wordLength] || [];
+    
+    // Generate additional permutations based on common letter patterns
+    const additionalWords = this.generateWordPermutations(wordLength);
+    
+    // Combine and deduplicate
+    const allWords = [...new Set([...commonWords, ...additionalWords])];
+    
+    return allWords;
+  }
 
-    // Check constraints compliance
+  private generateWordPermutations(wordLength: number): string[] {
+    const commonLetters = 'ETAOINSHRDLCUMWFGYPBVKJXQZ';
+    const vowels = 'AEIOU';
+    const consonants = 'BCDFGHJKLMNPQRSTVWXYZ';
+    const words: string[] = [];
+    
+    // Generate words with common patterns
+    for (let i = 0; i < 100; i++) {
+      let word = '';
+      
+      // Ensure at least one vowel
+      const vowelPositions = new Set<number>();
+      const numVowels = Math.min(Math.max(1, Math.floor(Math.random() * 3) + 1), wordLength - 1);
+      
+      while (vowelPositions.size < numVowels) {
+        vowelPositions.add(Math.floor(Math.random() * wordLength));
+      }
+      
+      for (let j = 0; j < wordLength; j++) {
+        if (vowelPositions.has(j)) {
+          word += vowels[Math.floor(Math.random() * vowels.length)];
+        } else {
+          word += consonants[Math.floor(Math.random() * consonants.length)];
+        }
+      }
+      
+      // Only add if it looks like a reasonable English word pattern
+      if (this.isReasonableWordPattern(word)) {
+        words.push(word);
+      }
+    }
+    
+    return words;
+  }
+
+  private isReasonableWordPattern(word: string): boolean {
+    const vowels = 'AEIOU';
+    let vowelCount = 0;
+    let consonantStreak = 0;
+    let vowelStreak = 0;
+    
+    for (const letter of word) {
+      if (vowels.includes(letter)) {
+        vowelCount++;
+        vowelStreak++;
+        consonantStreak = 0;
+        
+        // Too many vowels in a row
+        if (vowelStreak > 2) return false;
+      } else {
+        consonantStreak++;
+        vowelStreak = 0;
+        
+        // Too many consonants in a row
+        if (consonantStreak > 3) return false;
+      }
+    }
+    
+    // Must have at least one vowel and reasonable vowel ratio
+    return vowelCount >= 1 && vowelCount <= Math.ceil(word.length * 0.7);
+  }
+
+  private satisfiesConstraints(word: string, guessData: GuessData[]): boolean {
+    const wordUpper = word.toUpperCase();
+    
     for (let i = 0; i < guessData.length; i++) {
       const tile = guessData[i];
       if (!tile.letter) continue;
-
+      
       const letter = tile.letter.toUpperCase();
       const wordLetter = wordUpper[i];
-
+      
       switch (tile.state) {
         case 'correct':
-          if (wordLetter === letter) {
-            score += 25; // Strong bonus for correct position
-          } else {
-            return 0; // Invalid word
-          }
+          if (wordLetter !== letter) return false;
           break;
         case 'present':
-          if (wordUpper.includes(letter)) {
-            if (wordLetter !== letter) {
-              score += 15; // Bonus for letter in word but different position
-            } else {
-              return 0; // Letter shouldn't be in this position
-            }
-          } else {
-            return 0; // Letter must be in word
-          }
+          if (!wordUpper.includes(letter) || wordLetter === letter) return false;
           break;
         case 'absent':
-          if (wordUpper.includes(letter)) {
-            return 0; // Letter shouldn't be in word
-          }
-          score += 5; // Small bonus for respecting absent constraint
+          if (wordUpper.includes(letter)) return false;
           break;
       }
     }
+    
+    return true;
+  }
 
-    // Bonus for common letters in good positions
-    const commonLetters = 'ETAOINSHRDLU';
-    for (let i = 0; i < wordUpper.length; i++) {
-      if (commonLetters.includes(wordUpper[i])) {
-        score += 2;
+  private calculateProbability(word: string, guessData: GuessData[], wordLength: number): number {
+    let score = 0.5; // Base probability
+    
+    const wordUpper = word.toUpperCase();
+    const letterFreq = this.getLetterFrequencies();
+    
+    // Bonus for common letters
+    for (const letter of wordUpper) {
+      score += (letterFreq[letter] || 0) * 0.1;
+    }
+    
+    // Bonus for common word patterns
+    if (this.commonWords[wordLength]?.includes(wordUpper)) {
+      score += 0.3;
+    }
+    
+    // Bonus for satisfying more constraints
+    let constraintsSatisfied = 0;
+    let totalConstraints = 0;
+    
+    for (const tile of guessData) {
+      if (!tile.letter) continue;
+      totalConstraints++;
+      
+      const letter = tile.letter.toUpperCase();
+      switch (tile.state) {
+        case 'correct':
+        case 'present':
+        case 'absent':
+          constraintsSatisfied++;
+          break;
       }
     }
-
-    // Bonus for vowel distribution
-    const vowels = 'AEIOU';
-    const vowelCount = wordUpper.split('').filter(l => vowels.includes(l)).length;
-    if (vowelCount >= 1 && vowelCount <= 3) {
-      score += 5;
+    
+    if (totalConstraints > 0) {
+      score += (constraintsSatisfied / totalConstraints) * 0.2;
     }
+    
+    // Normalize to 0-1 range
+    return Math.min(0.95, Math.max(0.05, score));
+  }
 
-    return score;
+  private getLetterFrequencies(): { [key: string]: number } {
+    return {
+      'E': 0.12, 'T': 0.09, 'A': 0.08, 'O': 0.08, 'I': 0.07, 'N': 0.07,
+      'S': 0.06, 'H': 0.06, 'R': 0.06, 'D': 0.04, 'L': 0.04, 'C': 0.03,
+      'U': 0.03, 'M': 0.02, 'W': 0.02, 'F': 0.02, 'G': 0.02, 'Y': 0.02,
+      'P': 0.02, 'B': 0.01, 'V': 0.01, 'K': 0.01, 'J': 0.001, 'X': 0.001,
+      'Q': 0.001, 'Z': 0.001
+    };
   }
 }
 
