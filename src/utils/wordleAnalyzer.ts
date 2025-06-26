@@ -92,7 +92,7 @@ class WordleAnalyzer {
     console.log('First 10 words in database:', wordDatabase.slice(0, 10).map(w => w.word));
 
     // Filter and score words
-    const validWords: WordleSolution[] = [];
+    const validWords: Array<{ word: string; score: number; frequency: number }> = [];
     let checkedCount = 0;
     let debugCount = 0;
 
@@ -108,32 +108,60 @@ class WordleAnalyzer {
       
       if (isValid) {
         const score = calculateWordScore(word, constraints, frequency);
-        const probability = Math.min(95, Math.max(5, score));
         
         validWords.push({
           word: word,
-          probability: probability
+          score: score,
+          frequency: frequency
         });
         
-        console.log(`✅ Found valid word: ${word} with probability ${probability}%`);
+        console.log(`✅ Found valid word: ${word} with score ${score} (frequency: ${frequency})`);
       }
     }
 
-    // Sort by probability (highest first) and limit results
-    validWords.sort((a, b) => b.probability - a.probability);
-    
-    console.log(`Found ${validWords.length} valid words out of ${checkedCount} checked`);
-    if (validWords.length > 0) {
-      console.log('Top solutions:', validWords.slice(0, 5));
-    } else {
+    if (validWords.length === 0) {
       console.log('❌ No valid words found! Possible reasons:');
       console.log('1. The constraints are too restrictive');
       console.log('2. The word database might not contain the target word');
       console.log('3. There might be conflicting constraints from multiple guesses');
       console.log('4. Check if all present letters can be placed in valid positions');
+      return [];
     }
+
+    // Sort by score (highest first)
+    validWords.sort((a, b) => b.score - a.score);
     
-    return validWords.slice(0, 15);
+    // Convert scores to realistic probabilities
+    const maxScore = validWords[0].score;
+    const minScore = validWords[validWords.length - 1].score;
+    const scoreRange = maxScore - minScore;
+    
+    const solutions: WordleSolution[] = validWords.map((item, index) => {
+      // Calculate probability based on score relative to others
+      let probability: number;
+      
+      if (scoreRange === 0) {
+        // All words have same score, distribute evenly
+        probability = Math.max(20, 90 - (index * 5));
+      } else {
+        // Use score-based probability with diminishing returns
+        const normalizedScore = (item.score - minScore) / scoreRange;
+        const baseProbability = 20 + (normalizedScore * 60); // 20-80% range
+        const positionPenalty = index * 3; // Reduce by position
+        probability = Math.max(10, Math.min(85, baseProbability - positionPenalty));
+      }
+      
+      return {
+        word: item.word,
+        probability: Math.round(probability * 10) / 10 // Round to 1 decimal
+      };
+    });
+    
+    console.log(`Found ${validWords.length} valid words out of ${checkedCount} checked`);
+    console.log('Top solutions with scores:', validWords.slice(0, 5).map(w => `${w.word}: ${w.score}`));
+    console.log('Final probabilities:', solutions.slice(0, 5).map(s => `${s.word}: ${s.probability}%`));
+    
+    return solutions.slice(0, 15);
   }
 }
 
