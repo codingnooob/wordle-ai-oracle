@@ -29,36 +29,36 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
   };
 
   return (
-    <div className="space-y-2 sm:space-y-3">
+    <div className="space-y-1 sm:space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-base sm:text-lg font-medium text-slate-700">Exclude Letters</h3>
+        <h3 className="text-sm sm:text-lg font-medium text-slate-700">Exclude Letters</h3>
         <Button 
           onClick={clearAll}
           variant="outline" 
           size="sm"
-          className="text-xs px-2 py-1"
+          className="text-xs px-1 py-0.5 sm:px-2 sm:py-1"
         >
           Clear All
         </Button>
       </div>
       
-      <div className="space-y-1 sm:space-y-2">
+      <div className="space-y-0.5 sm:space-y-2">
         {rows.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex justify-center gap-0.5 sm:gap-1">
+          <div key={rowIndex} className="flex justify-center gap-0.5">
             {row.map((letter) => (
               <Button
                 key={letter}
                 onClick={() => toggleLetter(letter)}
                 variant={excludedLetters.has(letter) ? "default" : "outline"}
                 size="sm"
-                className={`w-6 h-6 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                className={`w-5 h-5 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs font-semibold transition-all duration-200 ${
                   excludedLetters.has(letter) 
                     ? 'bg-red-500 hover:bg-red-600 text-white' 
                     : 'hover:bg-slate-100'
                 }`}
               >
                 {excludedLetters.has(letter) ? (
-                  <X className="h-2 w-2 sm:h-3 sm:w-3" />
+                  <X className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
                 ) : (
                   letter
                 )}
@@ -69,7 +69,7 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
       </div>
       
       {excludedLetters.size > 0 && (
-        <div className="text-xs sm:text-sm text-slate-600 text-center">
+        <div className="text-xs text-slate-600 text-center">
           Excluded: {Array.from(excludedLetters).sort().join(', ')}
         </div>
       )}
