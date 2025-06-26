@@ -3,6 +3,7 @@ import { WebScrapingService } from './services/webScrapingService';
 import { WordQualityService } from './services/wordQualityService';
 import { CacheService } from './services/cacheService';
 import { realMLAnalyzer } from './realMLAnalyzer';
+import { SecurityUtils } from '../security/securityUtils';
 
 export class MLTrainingService {
   private webScrapingService = new WebScrapingService();
@@ -19,7 +20,7 @@ export class MLTrainingService {
     fromCache: boolean;
   }> {
     if (this.isTraining) {
-      console.log('⏳ Training already in progress, skipping...');
+      SecurityUtils.secureLog('Training already in progress, skipping...');
       return { success: false, wordCount: 0, duration: 0, fromCache: false };
     }
 
@@ -27,7 +28,7 @@ export class MLTrainingService {
     const startTime = Date.now();
 
     try {
-      console.log('⚡ Full corpus ML training cycle starting...');
+      SecurityUtils.secureLog('Full corpus ML training cycle starting...');
 
       // Try to get cached data first
       const cachedData = this.cacheService.getCachedData();
@@ -35,12 +36,13 @@ export class MLTrainingService {
       let fromCache = false;
 
       if (cachedData) {
-        console.log(`📋 Using cached full corpus: ${cachedData.words.length} words (${Math.floor((Date.now() - new Date(cachedData.timestamp).getTime()) / 1000)}s old)`);
-        console.log(`📊 Full corpus cache: ${cachedData.words.length} selected from ${cachedData.totalWords} total available`);
+        const cacheAge = Math.floor((Date.now() - new Date(cachedData.timestamp).getTime()) / 1000);
+        SecurityUtils.secureLog(`Using cached full corpus: ${cachedData.words.length} words (${cacheAge}s old)`);
+        SecurityUtils.secureLog(`Full corpus cache: ${cachedData.words.length} selected from ${cachedData.totalWords} total available`);
         scrapedWords = cachedData.words;
         fromCache = true;
       } else {
-        console.log('🔄 No valid cache, performing fresh full corpus scraping...');
+        SecurityUtils.secureLog('No valid cache, performing fresh full corpus scraping...');
         const scrapedData = await this.webScrapingService.performWebScraping();
         
         if (!scrapedData) {
@@ -50,11 +52,11 @@ export class MLTrainingService {
         this.cacheService.cacheScrapedData(scrapedData);
         scrapedWords = scrapedData.words;
         
-        console.log(`✅ Fresh full corpus: ${scrapedData.words.length} selected from ${scrapedData.totalWords} scraped`);
-        console.log(`📊 Full corpus scraping: ${scrapedData.scrapeResults.filter(r => r.success).length}/${scrapedData.scrapeResults.length} sources successful`);
+        SecurityUtils.secureLog(`Fresh full corpus: ${scrapedData.words.length} selected from ${scrapedData.totalWords} scraped`);
+        SecurityUtils.secureLog(`Full corpus scraping: ${scrapedData.scrapeResults.filter(r => r.success).length}/${scrapedData.scrapeResults.length} sources successful`);
       }
 
-      // Process the full corpus for training
+      // Process the full corpus for training with security validation
       const processedWords = this.wordQualityService.processTrainingData(scrapedWords);
       
       // Update the ML analyzer with the real word corpus
@@ -66,7 +68,7 @@ export class MLTrainingService {
       const duration = Date.now() - startTime;
       const retentionRate = ((processedWords.length / scrapedWords.length) * 100).toFixed(1);
       
-      console.log(`⚡ Full corpus training complete: ${scrapedWords.length}→${processedWords.length} words (${retentionRate}% retention, ${duration}ms)`);
+      SecurityUtils.secureLog(`Full corpus training complete: ${scrapedWords.length}→${processedWords.length} words (${retentionRate}% retention, ${duration}ms)`);
 
       return {
         success: true,
@@ -76,7 +78,7 @@ export class MLTrainingService {
       };
 
     } catch (error) {
-      console.error('❌ Full corpus training failed:', error);
+      SecurityUtils.secureLog('Full corpus training failed:', error, 'error');
       return { success: false, wordCount: 0, duration: Date.now() - startTime, fromCache: false };
     } finally {
       this.isTraining = false;
@@ -85,11 +87,11 @@ export class MLTrainingService {
 
   startBackgroundTraining(): void {
     if (this.backgroundInterval) {
-      console.log('🔄 Background training already running');
+      SecurityUtils.secureLog('Background training already running');
       return;
     }
 
-    console.log('🚀 Starting background ML training...');
+    SecurityUtils.secureLog('Starting background ML training...');
     
     // Start immediately
     this.performFullCorpusTraining();
@@ -104,7 +106,7 @@ export class MLTrainingService {
     if (this.backgroundInterval) {
       clearInterval(this.backgroundInterval);
       this.backgroundInterval = null;
-      console.log('🛑 Background ML training stopped');
+      SecurityUtils.secureLog('Background ML training stopped');
     }
   }
 

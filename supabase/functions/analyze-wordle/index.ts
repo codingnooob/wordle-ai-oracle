@@ -4,20 +4,124 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
+// Enhanced security headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin'
 };
+
+// Rate limiting
+const rateLimiter = new Map<string, number[]>();
+const RATE_LIMIT_MAX = 20; // Max 20 requests per minute
+const RATE_LIMIT_WINDOW = 60000;
+
+function checkRateLimit(clientId: string): boolean {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW;
+  
+  if (!rateLimiter.has(clientId)) {
+    rateLimiter.set(clientId, []);
+  }
+  
+  const requests = rateLimiter.get(clientId)!;
+  while (requests.length > 0 && requests[0] < windowStart) {
+    requests.shift();
+  }
+  
+  if (requests.length >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  requests.push(now);
+  return true;
+}
+
+function sanitizeInput(input: any): { isValid: boolean; data?: any; error?: string } {
+  if (!input || typeof input !== 'object') {
+    return { isValid: false, error: 'Invalid request format' };
+  }
+  
+  const { guessData, wordLength } = input;
+  
+  // Validate wordLength
+  if (typeof wordLength !== 'number' || wordLength < 3 || wordLength > 15) {
+    return { isValid: false, error: 'Invalid word length' };
+  }
+  
+  // Validate guessData
+  if (!Array.isArray(guessData) || guessData.length !== wordLength) {
+    return { isValid: false, error: 'Invalid guess data' };
+  }
+  
+  // Sanitize guess data
+  const sanitizedGuessData = guessData.map((tile: any) => {
+    if (!tile || typeof tile !== 'object') {
+      return { letter: '', state: 'unknown' };
+    }
+    
+    const letter = typeof tile.letter === 'string' ? 
+      tile.letter.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 1) : '';
+    
+    const validStates = ['correct', 'present', 'absent', 'unknown'];
+    const state = validStates.includes(tile.state) ? tile.state : 'unknown';
+    
+    return { letter, state };
+  });
+  
+  return { 
+    isValid: true, 
+    data: { guessData: sanitizedGuessData, wordLength } 
+  };
+}
+
+function secureLog(message: string, data?: any): void {
+  const isDev = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
+  if (isDev) {
+    console.log(message, data);
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { guessData, wordLength } = await req.json();
+  // Rate limiting
+  const clientId = req.headers.get('x-forwarded-for') || 'unknown';
+  if (!checkRateLimit(clientId)) {
+    return new Response(JSON.stringify({ error: 'Too many requests' }), {
+      status: 429,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
-    // Build constraint description for AI
+  try {
+    // Secure input validation
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validation = sanitizeInput(requestBody);
+    if (!validation.isValid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { guessData, wordLength } = validation.data;
+
+    // Build constraint description for AI (with sanitized inputs)
     const constraints = guessData
       .map((tile: any, index: number) => {
         if (!tile.letter) return null;
@@ -64,34 +168,39 @@ Only return the JSON array, no other text.`;
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
 
-    // Parse AI response
+    // Parse AI response with enhanced security
     let solutions;
     try {
       solutions = JSON.parse(aiResponse);
-      // Ensure it's an array and has the right structure
+      
       if (!Array.isArray(solutions)) {
         throw new Error('Invalid response format');
       }
       
-      // Validate and clean the solutions
+      // Validate and clean the solutions with security checks
       solutions = solutions
         .filter((sol: any) => sol.word && typeof sol.probability === 'number')
-        .slice(0, 15) // Limit to 15 results
+        .slice(0, 15) // Limit results
         .map((sol: any) => ({
-          word: sol.word.toUpperCase(),
-          probability: Math.min(95, Math.max(5, sol.probability))
-        }));
+          word: sol.word.toString().toUpperCase().replace(/[^A-Z]/g, '').substring(0, 15),
+          probability: Math.min(95, Math.max(5, Number(sol.probability) || 50))
+        }))
+        .filter((sol: any) => sol.word.length >= 3 && sol.word.length <= 15); // Final validation
+        
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+      secureLog('Failed to parse AI response:', parseError);
       solutions = [];
     }
 
     return new Response(JSON.stringify(solutions), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+    
   } catch (error) {
-    console.error('Error in analyze-wordle function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    secureLog('Error in analyze-wordle function:', error);
+    
+    // Return generic error message for security
+    return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

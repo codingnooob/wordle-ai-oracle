@@ -5,24 +5,95 @@ import { ScrapingResponse } from './types.ts';
 import { WebScraper } from './scraper.ts';
 import { getFallbackWords } from './fallbackWords.ts';
 
+// Security headers for enhanced protection
+const securityHeaders = {
+  ...corsHeaders,
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin'
+};
+
+// Rate limiting
+const rateLimiter = new Map<string, number[]>();
+const RATE_LIMIT_MAX = 10; // Max 10 requests
+const RATE_LIMIT_WINDOW = 60000; // Per minute
+
+function checkRateLimit(clientId: string): boolean {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW;
+  
+  if (!rateLimiter.has(clientId)) {
+    rateLimiter.set(clientId, []);
+  }
+  
+  const requests = rateLimiter.get(clientId)!;
+  // Remove old requests
+  while (requests.length > 0 && requests[0] < windowStart) {
+    requests.shift();
+  }
+  
+  if (requests.length >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  requests.push(now);
+  return true;
+}
+
+function sanitizeInput(input: any): number {
+  if (typeof input !== 'number' || isNaN(input) || input < 1000 || input > 200000) {
+    return 200000; // Safe default
+  }
+  return Math.floor(input);
+}
+
+function secureLog(message: string, data?: any): void {
+  // Only log in development or critical errors
+  const isDev = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
+  if (isDev) {
+    console.log(message, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    // Production: only log basic info without sensitive data
+    console.log('Web scraper operation completed');
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: securityHeaders });
   }
 
-  console.log('🚀 Starting optimized high-frequency web scraping...');
+  // Rate limiting check
+  const clientId = req.headers.get('x-forwarded-for') || 'unknown';
+  if (!checkRateLimit(clientId)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { ...securityHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  secureLog('Starting optimized high-frequency web scraping...');
   const startTime = Date.now();
 
   try {
-    const { maxWords = 200000 } = await req.json().catch(() => ({})); // Increased to 200K to accommodate full corpus
+    // Secure input validation
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch {
+      requestData = {};
+    }
+    
+    const maxWords = sanitizeInput(requestData.maxWords);
     
     const scraper = new WebScraper();
     const { words: allWords, results: scrapeResults } = await scraper.scrapeFromTargets(SCRAPING_TARGETS);
 
     // Add fallback words if we don't have enough diversity
     if (allWords.size < 10000) {
-      console.log('📚 Adding fallback content for diversity...');
+      secureLog('Adding fallback content for diversity...');
       const fallbackWords = getFallbackWords();
       fallbackWords.forEach(word => allWords.add(word));
     }
@@ -30,30 +101,36 @@ const handler = async (req: Request): Promise<Response> => {
     // Convert to array - use the FULL corpus without artificial selection limits
     const allWordsArray = Array.from(allWords);
     
-    // Return the full filtered corpus instead of artificially limiting it
+    // Return the full filtered corpus or apply diversity selection if needed
     const finalWords = allWordsArray.length > maxWords ? 
       selectDiverseWords(allWordsArray, maxWords) : 
       allWordsArray;
     
     const processingTime = Date.now() - startTime;
+    
+    // Secure response - limit exposed information
     const response: ScrapingResponse = {
       words: finalWords,
       totalWords: finalWords.length,
       totalScraped: allWordsArray.length,
-      scrapeResults,
+      scrapeResults: scrapeResults.map(result => ({
+        source: result.source.replace(/https?:\/\/[^\/]+/g, '[DOMAIN]'), // Sanitize URLs
+        wordCount: result.wordCount,
+        success: result.success
+      })),
       timestamp: new Date().toISOString()
     };
 
-    console.log(`✅ Full corpus scraping complete: ${finalWords.length} words from ${allWordsArray.length} total scraped (${scrapeResults.length} sources) in ${processingTime}ms`);
+    secureLog(`Full corpus scraping complete: ${finalWords.length} words from ${allWordsArray.length} total scraped (${scrapeResults.length} sources) in ${processingTime}ms`);
 
     return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...securityHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ Scraping failed:', error);
+    secureLog('Scraping failed:', error);
     
-    // Return enhanced fallback data
+    // Return enhanced fallback data with secure error handling
     const fallbackWords = getFallbackWords();
     
     const response: ScrapingResponse = {
@@ -61,19 +138,19 @@ const handler = async (req: Request): Promise<Response> => {
       totalWords: fallbackWords.length,
       totalScraped: fallbackWords.length,
       scrapeResults: [],
-      error: error.message,
+      error: 'Service temporarily unavailable', // Generic error message
       fallback: true,
       timestamp: new Date().toISOString()
     };
 
     return new Response(JSON.stringify(response), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...securityHeaders, 'Content-Type': 'application/json' },
     });
   }
 };
 
-// Smart word selection function to maximize diversity (only used if corpus exceeds 200K)
+// Smart word selection function to maximize diversity (only used if corpus exceeds limit)
 function selectDiverseWords(words: string[], maxCount: number): string[] {
   if (words.length <= maxCount) return words;
   
@@ -107,7 +184,7 @@ function selectDiverseWords(words: string[], maxCount: number): string[] {
     selected.push(...shuffledRemaining.slice(0, maxCount - selected.length));
   }
   
-  console.log(`📊 Diversity selection: ${selected.length} words from ${words.length} total (${lengths.length} length categories)`);
+  secureLog(`Diversity selection: ${selected.length} words from ${words.length} total (${lengths.length} length categories)`);
   return selected.slice(0, maxCount);
 }
 
