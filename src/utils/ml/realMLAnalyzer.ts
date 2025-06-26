@@ -23,23 +23,16 @@ export class RealMLAnalyzer {
   }
 
   private async startBackgroundScraping(): Promise<void> {
-    const commonTexts = [
-      "The quick brown fox jumps over the lazy dog",
-      "English words are derived from various languages including Latin Greek and Germanic roots",
-      "Common five letter words include about house world after every right think great where",
-      "Wordle game uses common English words that people recognize and use frequently",
-      "Letter frequency analysis shows that E T A O I N S H R are most common in English"
-    ];
-
-    const webScrapedData = commonTexts
-      .join(' ')
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(word => word.length >= 3 && word.length <= 8)
-      .filter(word => /^[a-z]+$/.test(word));
-
+    // This will be populated by the ML training service with real corpus data
+    const webScrapedData: string[] = [];
     this.wordGenerator.setWebScrapedData(webScrapedData);
-    console.log(`Scraped ${webScrapedData.length} words from web data`);
+    console.log(`Initialized word generator with empty corpus (will be populated by training service)`);
+  }
+
+  // Method to update the corpus when training service provides it
+  updateCorpus(corpusWords: string[]): void {
+    this.wordGenerator.setWebScrapedData(corpusWords);
+    console.log(`📚 Updated ML analyzer with corpus of ${corpusWords.length} real words`);
   }
 
   async analyzeGuess(
@@ -51,7 +44,7 @@ export class RealMLAnalyzer {
       await this.initialize();
     }
 
-    console.log('🔍 Starting constraint-aware ML analysis...');
+    console.log('🔍 Starting corpus-based ML analysis with real words...');
     console.log('Input constraints:', { guessData, wordLength, excludedLetters: Array.from(excludedLetters) });
 
     // Step 1: Analyze constraints from guess data
@@ -64,58 +57,65 @@ export class RealMLAnalyzer {
       positionExclusions: Array.from(constraints.positionExclusions.entries()).map(([pos, letters]) => [pos, Array.from(letters)])
     });
 
-    // Step 2: Generate candidate words with constraint awareness
-    const candidateWords = await this.wordGenerator.generateConstraintAwareCandidates(
+    // Step 2: Get real words from corpus that match constraints
+    const realWordCandidates = await this.wordGenerator.generateConstraintAwareCandidates(
       guessData, 
       wordLength, 
       constraints,
       this.modelInitializer.getTextGenerator()
     );
-    console.log(`🎯 Generated ${candidateWords.length} constraint-aware candidates`);
+    console.log(`📚 Found ${realWordCandidates.length} real words from corpus that match constraints`);
 
-    // Step 3: Apply strict constraint validation
-    let validWords = candidateWords.filter(word => {
+    if (realWordCandidates.length === 0) {
+      console.warn('⚠️ No real words found matching constraints - returning empty results');
+      return [];
+    }
+
+    // Step 3: Apply additional excluded letter filtering
+    let validWords = realWordCandidates.filter(word => {
       const wordUpper = word.toUpperCase();
       
-      // Check excluded letters first (quick filter)
+      // Check excluded letters
       for (const excluded of excludedLetters) {
         if (wordUpper.includes(excluded)) {
           return false;
         }
       }
       
-      // Apply rigorous constraint validation
+      // Double-check constraint validation
       const isValid = validateWordAgainstConstraints(wordUpper, constraints);
       if (!isValid) {
-        console.log(`❌ Rejected "${wordUpper}" - failed constraint validation`);
+        console.log(`❌ Double-check failed for "${wordUpper}"`);
       }
       return isValid;
     });
 
-    console.log(`✅ ${validWords.length} words passed constraint validation out of ${candidateWords.length} candidates`);
+    console.log(`✅ ${validWords.length} real words passed all validations`);
 
     if (validWords.length === 0) {
-      console.warn('⚠️ No words passed constraint validation - returning empty results');
+      console.warn('⚠️ No words passed final validation - returning empty results');
       return [];
     }
 
-    // Step 4: Enhanced validation with ML models
+    // Step 4: ML validation (ensure they're recognizable English words)
     const mlValidatedWords = await this.wordValidator.validateWords(
       validWords, 
       this.modelInitializer.getWordValidator()
     );
 
-    // Step 5: Constraint-aware scoring
+    console.log(`🤖 ${mlValidatedWords.length} words passed ML validation`);
+
+    // Step 5: Score the real words based on how well they fit constraints
     const scoredWords = await this.wordScorer.scoreWordsWithConstraints(
       mlValidatedWords, 
       guessData, 
       constraints,
       wordLength,
-      []
+      validWords // Pass the corpus words for frequency scoring
     );
 
     const finalResults = scoredWords.slice(0, 15);
-    console.log('🏆 Final constraint-validated results:', finalResults.map(r => `${r.word}: ${(r.probability * 100).toFixed(1)}%`));
+    console.log('🏆 Final real word results:', finalResults.map(r => `${r.word}: ${(r.probability * 100).toFixed(1)}%`));
 
     return finalResults;
   }
