@@ -2,6 +2,7 @@
 interface ScrapedData {
   words: string[];
   totalWords: number;
+  totalScraped?: number; // Added to track total scraped words
   scrapeResults: Array<{ source: string; wordCount: number; success: boolean }>;
   timestamp: string;
   fallback?: boolean;
@@ -14,7 +15,7 @@ interface CachedScrapedData extends ScrapedData {
 
 export class CacheService {
   private readonly CACHE_KEY = 'ml_scraped_data';
-  private readonly CACHE_DURATION = 30 * 1000; // 30 seconds for better refresh rate
+  private readonly CACHE_DURATION = 30 * 1000; // 30 seconds
 
   getCachedData(): CachedScrapedData | null {
     try {
@@ -29,10 +30,10 @@ export class CacheService {
         return null;
       }
       
-      // Check if cache is actually expired
+      // Check if cache is expired (prioritize time over word count)
       const now = Date.now();
       if (now >= data.expiresAt) {
-        console.log('🗂️ Cache expired, clearing old data');
+        console.log(`🗂️ Cache expired (${Math.floor((now - data.cachedAt) / 1000)}s old), clearing old data`);
         this.clearCache();
         return null;
       }
@@ -55,13 +56,14 @@ export class CacheService {
       };
       
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(cachedData));
-      console.log(`🗂️ Cached ${data.totalWords} words for 30 seconds (expires at ${new Date(cachedData.expiresAt).toLocaleTimeString()})`);
+      const scrapedInfo = data.totalScraped ? `${data.totalWords} selected from ${data.totalScraped} scraped` : `${data.totalWords} words`;
+      console.log(`🗂️ Cached ${scrapedInfo} for 30 seconds (expires at ${new Date(cachedData.expiresAt).toLocaleTimeString()})`);
     } catch (error) {
       console.error('Failed to cache scraped data:', error);
     }
   }
 
-  getCacheStatus(): { cached: boolean; age?: string; size?: number } {
+  getCacheStatus(): { cached: boolean; age?: string; size?: number; totalScraped?: number } {
     const cached = this.getCachedData();
     
     if (!cached) {
@@ -73,11 +75,11 @@ export class CacheService {
     const ageSeconds = Math.floor(ageMs / 1000);
     const isExpired = now >= cached.expiresAt;
     
-    // FIXED: Return proper status based on actual expiration
     return {
       cached: !isExpired,
       age: `${ageSeconds}s`,
-      size: cached.totalWords
+      size: cached.totalWords,
+      totalScraped: cached.totalScraped
     };
   }
 

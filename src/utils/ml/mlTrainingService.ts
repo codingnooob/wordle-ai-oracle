@@ -1,4 +1,3 @@
-
 import { realMLAnalyzer } from './realMLAnalyzer';
 import { WebScrapingService } from './services/webScrapingService';
 import { CacheService } from './services/cacheService';
@@ -23,7 +22,7 @@ export class MLTrainingService {
     // Optimized training frequency: every 30 seconds
     this.trainingInterval = setInterval(() => {
       this.performBackgroundTraining();
-    }, 30 * 1000); // 30 seconds for better performance
+    }, 30 * 1000);
 
     // Perform initial training immediately
     await this.performBackgroundTraining();
@@ -38,24 +37,16 @@ export class MLTrainingService {
 
     try {
       const cachedData = this.cacheService.getCachedData();
-      const now = Date.now();
       
-      // FIXED: Check time-based expiration first, regardless of word count
-      const isCacheExpired = !cachedData || now >= cachedData.expiresAt;
-      
-      if (!isCacheExpired && cachedData.totalWords > 1000) {
-        const ageMs = now - cachedData.cachedAt;
-        const ageSeconds = Math.floor(ageMs / 1000);
-        console.log(`📋 Using valid cached data: ${cachedData.totalWords} words (${ageSeconds}s old)`);
+      // Always check time-based expiration first (prioritize freshness)
+      if (cachedData && cachedData.totalWords > 1000) {
+        console.log(`📋 Using valid cached data: ${cachedData.totalWords} words (${Math.floor((Date.now() - cachedData.cachedAt) / 1000)}s old)`);
+        if (cachedData.totalScraped) {
+          console.log(`📊 Cache info: ${cachedData.totalWords} selected from ${cachedData.totalScraped} total scraped`);
+        }
         this.trainingData = cachedData.words;
       } else {
-        if (cachedData) {
-          const ageMs = now - cachedData.cachedAt;
-          const ageSeconds = Math.floor(ageMs / 1000);
-          console.log(`🔄 Cache expired (${ageSeconds}s old), performing fresh scraping...`);
-        } else {
-          console.log('🔄 No cached data, performing fresh scraping...');
-        }
+        console.log('🔄 No valid cached data, performing fresh scraping...');
         
         const scrapedData = await this.webScrapingService.performWebScraping();
         
@@ -63,7 +54,10 @@ export class MLTrainingService {
           this.trainingData = scrapedData.words;
           this.cacheService.cacheScrapedData(scrapedData);
           
-          console.log(`✅ Fresh scraping: ${scrapedData.totalWords} words (up from cached data)`);
+          const scrapedInfo = scrapedData.totalScraped 
+            ? `${scrapedData.totalWords} selected from ${scrapedData.totalScraped} scraped`
+            : `${scrapedData.totalWords} words`;
+          console.log(`✅ Fresh scraping: ${scrapedInfo}`);
           
           if (scrapedData.fallback) {
             console.warn('⚠️ Using fallback data due to network issues');
@@ -77,7 +71,7 @@ export class MLTrainingService {
         }
       }
       
-      // Process and validate training data with less aggressive filtering
+      // Process and validate training data (less aggressive filtering to keep more words)
       const originalCount = this.trainingData.length;
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
@@ -101,7 +95,7 @@ export class MLTrainingService {
     return this.trainingData.length;
   }
 
-  getCacheStatus(): { cached: boolean; age?: string; size?: number } {
+  getCacheStatus(): { cached: boolean; age?: string; size?: number; totalScraped?: number } {
     return this.cacheService.getCacheStatus();
   }
 

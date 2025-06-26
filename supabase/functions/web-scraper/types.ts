@@ -2,7 +2,6 @@
 export interface ScrapingTarget {
   url: string;
   name: string;
-  selector?: string;
 }
 
 export interface ScrapeResult {
@@ -14,6 +13,7 @@ export interface ScrapeResult {
 export interface ScrapingResponse {
   words: string[];
   totalWords: number;
+  totalScraped?: number; // Added to track how many words were actually scraped
   scrapeResults: ScrapeResult[];
   timestamp: string;
   error?: string;

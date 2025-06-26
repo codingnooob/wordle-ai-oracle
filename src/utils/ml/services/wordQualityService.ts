@@ -6,6 +6,8 @@ export class WordQualityService {
     const processedWords = uniqueWords.filter(word => this.isQualityWord(word));
     
     console.log(`📊 Word processing: ${words.length} raw → ${uniqueWords.length} unique → ${processedWords.length} filtered`);
+    
+    // Return more words - don't limit to 9999
     return processedWords;
   }
 

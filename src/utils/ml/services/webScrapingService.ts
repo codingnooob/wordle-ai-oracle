@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface ScrapedData {
   words: string[];
   totalWords: number;
+  totalScraped?: number; // Added to track total scraped words
   scrapeResults: Array<{ source: string; wordCount: number; success: boolean }>;
   timestamp: string;
   fallback?: boolean;
@@ -18,7 +19,7 @@ export class WebScrapingService {
       console.log(`Attempting web scraping (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS})...`);
       
       const { data, error } = await supabase.functions.invoke('web-scraper', {
-        body: { maxWords: 10000 }
+        body: { maxWords: 50000 } // Increased from 10K to 50K
       });
 
       if (error) {
@@ -27,6 +28,11 @@ export class WebScrapingService {
 
       if (!data || !data.words || !Array.isArray(data.words)) {
         throw new Error('Invalid response format from web scraper');
+      }
+
+      // Log the response size information
+      if (data.totalScraped) {
+        console.log(`📊 Scraping result: ${data.totalWords} selected from ${data.totalScraped} total scraped words`);
       }
 
       return data as ScrapedData;
