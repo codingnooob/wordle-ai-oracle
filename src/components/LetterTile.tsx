@@ -38,21 +38,34 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
   };
 
   return (
-    <div className="relative mb-2 sm:mb-8 xl:mb-10 flex flex-col items-center">
+    <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(0.5rem, 2vw, 2rem)' }}>
       <Input
         value={letter}
         onChange={() => {}} // Disabled - letters are set from the main word input
         onFocus={() => setIsActive(true)}
         onBlur={() => setIsActive(false)}
-        className={`w-6 h-6 sm:w-10 sm:h-10 xl:w-12 xl:h-12 text-center text-xs sm:text-lg xl:text-xl font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} ${
+        className={`text-center font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} ${
           isActive ? 'ring-2 ring-blue-300 ring-offset-2' : ''
         }`}
+        style={{
+          width: 'clamp(32px, 8vw, 64px)',
+          height: 'clamp(32px, 8vw, 64px)',
+          fontSize: 'clamp(0.875rem, 3vw, 1.5rem)'
+        }}
         maxLength={1}
         readOnly
       />
       <button
         onClick={cycleState}
-        className="mt-0.5 text-xs text-slate-500 hover:text-slate-700 transition-colors duration-200 whitespace-nowrap min-w-0 max-w-[30px] sm:max-w-[60px] text-center truncate"
+        className="text-slate-500 hover:text-slate-700 transition-colors duration-200 text-center"
+        style={{
+          marginTop: 'clamp(0.125rem, 0.5vw, 0.25rem)',
+          fontSize: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+          maxWidth: 'clamp(32px, 8vw, 64px)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
       >
         {getButtonText()}
       </button>
