@@ -32,8 +32,13 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
     onStateChange(nextState);
   };
 
+  const getButtonText = () => {
+    if (state === 'unknown') return 'Tap';
+    return state;
+  };
+
   return (
-    <div className="relative mb-8">
+    <div className="relative mb-10 flex flex-col items-center">
       <Input
         value={letter}
         onChange={() => {}} // Disabled - letters are set from the main word input
@@ -47,9 +52,9 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
       />
       <button
         onClick={cycleState}
-        className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-slate-500 hover:text-slate-700 transition-colors duration-200 whitespace-nowrap"
+        className="mt-2 text-xs text-slate-500 hover:text-slate-700 transition-colors duration-200 whitespace-nowrap min-w-0 max-w-[60px] text-center truncate"
       >
-        {state === 'unknown' ? 'Click to set' : state}
+        {getButtonText()}
       </button>
     </div>
   );
