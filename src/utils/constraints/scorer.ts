@@ -30,8 +30,8 @@ export function calculateWordScore(word: string, constraints: WordConstraints, b
   for (let i = 0; i < word.length; i++) {
     const letter = word[i].toUpperCase();
     if (commonLetters.includes(letter)) {
-      const excludedPositionsSet = constraints.positionExclusions.get(letter);
-      if (excludedPositionsSet && excludedPositionsSet.has(i)) {
+      const excludedLettersAtPosition = constraints.positionExclusions.get(i);
+      if (excludedLettersAtPosition && excludedLettersAtPosition.has(letter)) {
         commonLetterPenalty += 5; // Penalty for common letters in excluded positions
       }
     }

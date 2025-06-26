@@ -67,14 +67,11 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
     
     console.log(`Letter ${presentLetter} found at positions: [${letterPositions.join(', ')}]`);
     
-    // Get excluded positions for this letter
-    const excludedPositionsSet = constraints.positionExclusions.get(presentLetter);
-    const excludedPositions = excludedPositionsSet ? Array.from(excludedPositionsSet) : [];
-    
     // Check if this letter has at least one valid position
     let hasValidPosition = false;
     for (const pos of letterPositions) {
-      const isExcluded = excludedPositions.includes(pos);
+      const excludedLettersAtPosition = constraints.positionExclusions.get(pos);
+      const isExcluded = excludedLettersAtPosition && excludedLettersAtPosition.has(presentLetter);
       const correctLetterAtPos = constraints.correctPositions.get(pos);
       const isOccupiedByDifferentCorrectLetter = correctLetterAtPos && correctLetterAtPos !== presentLetter;
       
@@ -86,7 +83,7 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
     }
     
     if (!hasValidPosition) {
-      console.log(`❌ Letter ${presentLetter} has no valid positions (excluded: [${excludedPositions.join(', ')}])`);
+      console.log(`❌ Letter ${presentLetter} has no valid positions`);
       return false;
     }
   }
