@@ -31,7 +31,7 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
   return (
     <div className="space-y-1 sm:space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm sm:text-lg font-medium text-slate-700">Exclude Letters</h3>
+        <h3 className="text-xs sm:text-lg font-medium text-slate-700">Exclude Letters</h3>
         <Button 
           onClick={clearAll}
           variant="outline" 
@@ -51,14 +51,14 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
                 onClick={() => toggleLetter(letter)}
                 variant={excludedLetters.has(letter) ? "default" : "outline"}
                 size="sm"
-                className={`w-5 h-5 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs font-semibold transition-all duration-200 ${
+                className={`w-3 h-3 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs font-semibold transition-all duration-200 ${
                   excludedLetters.has(letter) 
                     ? 'bg-red-500 hover:bg-red-600 text-white' 
                     : 'hover:bg-slate-100'
                 }`}
               >
                 {excludedLetters.has(letter) ? (
-                  <X className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
+                  <X className="h-1 w-1 sm:h-3 sm:w-3" />
                 ) : (
                   letter
                 )}
