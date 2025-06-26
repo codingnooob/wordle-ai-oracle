@@ -26,20 +26,27 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="w-full px-1 sm:px-4 py-1 sm:py-4">
-        <div className="max-w-[280px] sm:max-w-2xl xl:max-w-6xl mx-auto">
-          <div className="text-center mb-2 sm:mb-6 xl:mb-8">
-            <h1 className="text-lg sm:text-3xl xl:text-4xl font-bold text-slate-800 mb-1 sm:mb-2">
+      <div className="w-full" style={{ padding: 'clamp(0.25rem, 2vw, 1rem)' }}>
+        <div className="mx-auto" style={{ 
+          maxWidth: 'clamp(280px, 95vw, 1200px)',
+          paddingLeft: 'clamp(0.25rem, 2vw, 1rem)',
+          paddingRight: 'clamp(0.25rem, 2vw, 1rem)'
+        }}>
+          <div className="text-center" style={{ marginBottom: 'clamp(0.5rem, 3vw, 2rem)' }}>
+            <h1 className="font-bold text-slate-800" style={{ 
+              fontSize: 'clamp(1.125rem, 4vw, 2.25rem)',
+              marginBottom: 'clamp(0.25rem, 1vw, 0.5rem)'
+            }}>
               Wordle Solver
             </h1>
-            <p className="text-slate-600 text-xs sm:text-base xl:text-lg">
+            <p className="text-slate-600" style={{ fontSize: 'clamp(0.75rem, 2vw, 1.125rem)' }}>
               Enter your guess and let AI find the most likely solutions
             </p>
           </div>
           
-          <div className="grid gap-1 sm:gap-4 xl:gap-6 xl:grid-cols-2">
-            <div className="space-y-1 sm:space-y-4 xl:space-y-6">
-              <Card className="p-2 sm:p-4 xl:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+          <div className="grid xl:grid-cols-2" style={{ gap: 'clamp(0.25rem, 2vw, 1.5rem)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.25rem, 2vw, 1.5rem)' }}>
+              <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm" style={{ padding: 'clamp(0.5rem, 3vw, 1.5rem)' }}>
                 <WordLengthSelector 
                   wordLength={wordLength} 
                   setWordLength={setWordLength}
@@ -51,7 +58,7 @@ const Index = () => {
                 />
               </Card>
               
-              <Card className="p-2 sm:p-4 xl:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm" style={{ padding: 'clamp(0.5rem, 3vw, 1.5rem)' }}>
                 <WordleBoard 
                   wordLength={wordLength}
                   guessData={guessData}
@@ -64,15 +71,15 @@ const Index = () => {
             </div>
             
             <div>
-              <Card className="p-2 sm:p-4 xl:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm h-fit">
+              <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm h-fit" style={{ padding: 'clamp(0.5rem, 3vw, 1.5rem)' }}>
                 <SolutionsList solutions={solutions} analyzing={analyzing} />
               </Card>
             </div>
           </div>
-          
-          <Footer />
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

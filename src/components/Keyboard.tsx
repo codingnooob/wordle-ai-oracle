@@ -29,36 +29,48 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
   };
 
   return (
-    <div className="space-y-1 sm:space-y-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.25rem, 2vw, 0.75rem)' }}>
       <div className="flex items-center justify-between">
-        <h3 className="text-xs sm:text-lg font-medium text-slate-700">Exclude Letters</h3>
+        <h3 className="font-medium text-slate-700" style={{ fontSize: 'clamp(0.75rem, 3vw, 1.125rem)' }}>
+          Exclude Letters
+        </h3>
         <Button 
           onClick={clearAll}
           variant="outline" 
           size="sm"
-          className="text-xs px-1 py-0.5 sm:px-2 sm:py-1 h-5 sm:h-auto"
+          className="transition-colors"
+          style={{ 
+            fontSize: 'clamp(0.625rem, 2vw, 0.75rem)',
+            padding: 'clamp(0.125rem, 1vw, 0.25rem) clamp(0.25rem, 2vw, 0.5rem)',
+            height: 'clamp(20px, 4vw, 32px)'
+          }}
         >
           Clear All
         </Button>
       </div>
       
-      <div className="space-y-0.5 sm:space-y-2">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.125rem, 1vw, 0.5rem)' }}>
         {rows.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex justify-center gap-0.5">
+          <div key={rowIndex} className="flex justify-center" style={{ gap: 'clamp(0.125rem, 0.5vw, 0.25rem)' }}>
             {row.map((letter) => (
               <Button
                 key={letter}
                 onClick={() => toggleLetter(letter)}
                 variant={excludedLetters.has(letter) ? "default" : "outline"}
                 size="sm"
-                className={`w-5 h-5 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs font-semibold transition-all duration-200 ${
+                className={`p-0 font-semibold transition-all duration-200 ${
                   excludedLetters.has(letter) 
                     ? 'bg-red-500 hover:bg-red-600 text-white' 
                     : 'hover:bg-slate-100'
                 }`}
+                style={{ 
+                  width: 'clamp(20px, 4vw, 32px)',
+                  height: 'clamp(20px, 4vw, 32px)',
+                  fontSize: 'clamp(0.625rem, 2vw, 0.75rem)'
+                }}
               >
                 {excludedLetters.has(letter) ? (
-                  <X className="h-2 w-2 sm:h-3 sm:w-3" />
+                  <X style={{ width: 'clamp(8px, 2vw, 12px)', height: 'clamp(8px, 2vw, 12px)' }} />
                 ) : (
                   letter
                 )}
@@ -69,7 +81,7 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
       </div>
       
       {excludedLetters.size > 0 && (
-        <div className="text-xs text-slate-600 text-center">
+        <div className="text-slate-600 text-center" style={{ fontSize: 'clamp(0.625rem, 2vw, 0.75rem)' }}>
           Excluded: {Array.from(excludedLetters).sort().join(', ')}
         </div>
       )}

@@ -8,9 +8,10 @@ interface SolutionsListProps {
 
 const SolutionsList = ({ solutions, analyzing }: SolutionsListProps) => {
   const getIcon = (index: number) => {
-    if (index === 0) return <Trophy className="h-3 w-3 sm:h-5 sm:w-5 text-yellow-500" />;
-    if (index === 1) return <Target className="h-3 w-3 sm:h-5 sm:w-5 text-orange-500" />;
-    return <Brain className="h-3 w-3 sm:h-5 sm:w-5 text-purple-500" />;
+    const iconSize = { width: 'clamp(12px, 3vw, 20px)', height: 'clamp(12px, 3vw, 20px)' };
+    if (index === 0) return <Trophy style={iconSize} className="text-yellow-500" />;
+    if (index === 1) return <Target style={iconSize} className="text-orange-500" />;
+    return <Brain style={iconSize} className="text-purple-500" />;
   };
 
   const getProbabilityColor = (probability: number) => {
@@ -21,39 +22,81 @@ const SolutionsList = ({ solutions, analyzing }: SolutionsListProps) => {
   };
 
   return (
-    <div className="space-y-2 sm:space-y-4">
-      <h2 className="text-sm sm:text-xl font-semibold text-slate-700 flex items-center gap-1 sm:gap-2">
-        <Brain className={`h-3 w-3 sm:h-5 sm:w-5 text-purple-500 ${analyzing ? 'animate-pulse' : ''}`} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 3vw, 1rem)' }}>
+      <h2 className="font-semibold text-slate-700 flex items-center" style={{ 
+        fontSize: 'clamp(0.875rem, 3vw, 1.25rem)',
+        gap: 'clamp(0.25rem, 1vw, 0.5rem)'
+      }}>
+        <Brain style={{ width: 'clamp(12px, 3vw, 20px)', height: 'clamp(12px, 3vw, 20px)' }} className={`text-purple-500 ${analyzing ? 'animate-pulse' : ''}`} />
         ML Predictions
-        {analyzing && <span className="text-xs sm:text-sm text-slate-500 font-normal">- AI Thinking...</span>}
+        {analyzing && (
+          <span className="text-slate-500 font-normal" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+            - AI Thinking...
+          </span>
+        )}
       </h2>
       
       {analyzing ? (
-        <div className="text-center py-4 sm:py-8 text-slate-500">
-          <Brain className="h-6 w-6 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 text-purple-400 animate-pulse" />
-          <p className="text-sm sm:text-lg font-medium">AI is analyzing your guess...</p>
-          <p className="text-xs sm:text-sm">This may take a few seconds</p>
+        <div className="text-center text-slate-500" style={{ 
+          paddingTop: 'clamp(1rem, 4vw, 2rem)',
+          paddingBottom: 'clamp(1rem, 4vw, 2rem)'
+        }}>
+          <Brain style={{ 
+            width: 'clamp(24px, 6vw, 48px)', 
+            height: 'clamp(24px, 6vw, 48px)',
+            margin: '0 auto',
+            marginBottom: 'clamp(0.5rem, 2vw, 0.75rem)'
+          }} className="text-purple-400 animate-pulse" />
+          <p className="font-medium" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.125rem)' }}>
+            AI is analyzing your guess...
+          </p>
+          <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+            This may take a few seconds
+          </p>
         </div>
       ) : solutions.length === 0 ? (
-        <div className="text-center py-4 sm:py-8 text-slate-500">
-          <AlertCircle className="h-6 w-6 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 text-slate-300" />
-          <p className="text-sm sm:text-lg font-medium">No predictions found</p>
-          <p className="text-xs sm:text-sm">Try adjusting your guess or excluded letters</p>
+        <div className="text-center text-slate-500" style={{ 
+          paddingTop: 'clamp(1rem, 4vw, 2rem)',
+          paddingBottom: 'clamp(1rem, 4vw, 2rem)'
+        }}>
+          <AlertCircle style={{ 
+            width: 'clamp(24px, 6vw, 48px)', 
+            height: 'clamp(24px, 6vw, 48px)',
+            margin: '0 auto',
+            marginBottom: 'clamp(0.5rem, 2vw, 0.75rem)'
+          }} className="text-slate-300" />
+          <p className="font-medium" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.125rem)' }}>
+            No predictions found
+          </p>
+          <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+            Try adjusting your guess or excluded letters
+          </p>
         </div>
       ) : (
-        <div className="space-y-1 sm:space-y-3 max-h-64 sm:max-h-96 overflow-y-auto">
+        <div className="overflow-y-auto" style={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'clamp(0.25rem, 2vw, 0.75rem)',
+          maxHeight: 'clamp(256px, 50vh, 384px)'
+        }}>
           {solutions.map((solution, index) => (
             <div 
               key={solution.word} 
-              className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors duration-200 shadow-sm"
+              className="flex items-center justify-between bg-white border border-slate-200 hover:border-slate-300 transition-colors duration-200 shadow-sm rounded-lg"
+              style={{ padding: 'clamp(0.5rem, 2vw, 0.75rem)' }}
             >
-              <div className="flex items-center gap-1 sm:gap-3">
+              <div className="flex items-center" style={{ gap: 'clamp(0.25rem, 2vw, 0.75rem)' }}>
                 {getIcon(index)}
-                <span className="font-mono text-sm sm:text-lg font-semibold text-slate-700 uppercase tracking-wider">
+                <span className="font-mono font-semibold text-slate-700 uppercase tracking-wider" style={{ 
+                  fontSize: 'clamp(0.875rem, 3vw, 1.125rem)'
+                }}>
                   {solution.word}
                 </span>
               </div>
-              <div className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${getProbabilityColor(solution.probability)}`}>
+              <div className={`rounded-full font-medium ${getProbabilityColor(solution.probability)}`} style={{ 
+                padding: 'clamp(0.125rem, 1vw, 0.25rem) clamp(0.5rem, 2vw, 0.75rem)',
+                fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
+              }}>
                 {solution.probability.toFixed(1)}%
               </div>
             </div>

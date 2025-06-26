@@ -17,20 +17,27 @@ const WordLengthSelector = ({ wordLength, setWordLength, onLengthChange }: WordL
   };
 
   return (
-    <div className="space-y-2 sm:space-y-3">
-      <Label className="text-sm sm:text-lg font-semibold text-slate-700">Word Length</Label>
-      <div className="flex flex-wrap gap-1 sm:gap-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+      <Label className="font-semibold text-slate-700" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.125rem)' }}>
+        Word Length
+      </Label>
+      <div className="flex flex-wrap" style={{ gap: 'clamp(0.125rem, 1vw, 0.5rem)' }}>
         {lengths.map((length) => (
           <Button
             key={length}
             variant={wordLength === length ? "default" : "outline"}
             size="sm"
             onClick={() => handleLengthChange(length)}
-            className={`min-w-[30px] sm:min-w-[40px] h-6 sm:h-9 text-xs sm:text-sm transition-all duration-200 ${
+            className={`transition-all duration-200 ${
               wordLength === length 
                 ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-md' 
                 : 'hover:bg-blue-50 hover:border-blue-300'
             }`}
+            style={{ 
+              minWidth: 'clamp(24px, 5vw, 40px)',
+              height: 'clamp(24px, 5vw, 36px)',
+              fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
+            }}
           >
             {length}
           </Button>
