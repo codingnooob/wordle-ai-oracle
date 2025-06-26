@@ -52,8 +52,8 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
       // Add current guess to analyzer
       wordleAnalyzer.addGuess(guessData);
       
-      // Analyze current state
-      const solutions = wordleAnalyzer.analyzeCurrentState(wordLength);
+      // Analyze current state (now async)
+      const solutions = await wordleAnalyzer.analyzeCurrentState(wordLength);
       setSolutions(solutions);
       
       // Update history display

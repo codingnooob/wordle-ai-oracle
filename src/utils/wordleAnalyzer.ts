@@ -1,3 +1,4 @@
+
 import { getWordsForLength } from './wordDatabase';
 import { 
   analyzeConstraints, 
@@ -51,7 +52,7 @@ class WordleAnalyzer {
     }));
   }
 
-  analyzeCurrentState(wordLength: number): WordleSolution[] {
+  async analyzeCurrentState(wordLength: number): Promise<WordleSolution[]> {
     if (this.guessHistory.length === 0) {
       console.log('No guess history available');
       return [];
@@ -63,8 +64,8 @@ class WordleAnalyzer {
     const constraints = analyzeConstraints(this.guessHistory);
     console.log('Generated constraints:', constraints);
 
-    // Get word database for the specified length
-    const wordDatabase = getWordsForLength(wordLength);
+    // Get word database for the specified length (now async)
+    const wordDatabase = await getWordsForLength(wordLength);
     if (wordDatabase.length === 0) {
       console.warn(`No words found for length ${wordLength}`);
       return [];
@@ -110,8 +111,8 @@ class WordleAnalyzer {
 // Export singleton instance
 export const wordleAnalyzer = new WordleAnalyzer();
 
-// Legacy function for backward compatibility
+// Legacy function for backward compatibility - now async
 export async function analyzeGuess(guessData: GuessData[], wordLength: number): Promise<WordleSolution[]> {
   wordleAnalyzer.addGuess(guessData);
-  return wordleAnalyzer.analyzeCurrentState(wordLength);
+  return await wordleAnalyzer.analyzeCurrentState(wordLength);
 }
