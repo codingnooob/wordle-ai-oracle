@@ -34,7 +34,7 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
 
   const getButtonText = () => {
     if (state === 'unknown') return 'Tap';
-    return state;
+    return state.charAt(0).toUpperCase() + state.slice(1);
   };
 
   return (
