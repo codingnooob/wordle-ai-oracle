@@ -25,9 +25,9 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="w-full px-4 py-4">
-        <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 overflow-x-hidden">
+      <div className="w-full max-w-full px-3 sm:px-4 py-4">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto">
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2">
               Wordle Solver
@@ -37,8 +37,8 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-6">
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+            <div className="space-y-4 sm:space-y-6">
               <Card className="p-4 sm:p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
                 <WordLengthSelector 
                   wordLength={wordLength} 
