@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import LetterTile from '@/components/LetterTile';
+import Keyboard from '@/components/Keyboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { mlWordleAnalyzer } from '@/utils/mlWordleAnalyzer';
@@ -16,6 +17,7 @@ interface WordleBoardProps {
 const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: WordleBoardProps) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [wordInput, setWordInput] = useState('');
+  const [excludedLetters, setExcludedLetters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Initialize guess data when word length changes
@@ -25,6 +27,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
     }));
     setGuessData(newGuessData);
     setWordInput('');
+    setExcludedLetters(new Set());
   }, [wordLength, setGuessData]);
 
   const handleWordInputChange = (value: string) => {
@@ -48,6 +51,18 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
     setGuessData(newGuessData);
   };
 
+  const handleLetterExclude = (letter: string) => {
+    setExcludedLetters(prev => new Set([...prev, letter]));
+  };
+
+  const handleLetterInclude = (letter: string) => {
+    setExcludedLetters(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(letter);
+      return newSet;
+    });
+  };
+
   const handleAnalyze = async () => {
     const hasValidInput = guessData.some(tile => tile.letter.trim() !== '');
     if (!hasValidInput) return;
@@ -55,9 +70,10 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
     setAnalyzing(true);
     try {
       console.log('Starting ML analysis for guess:', guessData);
+      console.log('Excluded letters:', Array.from(excludedLetters));
       
-      // Use ML analyzer instead of constraint-based analyzer
-      const solutions = await mlWordleAnalyzer.analyzeGuess(guessData, wordLength);
+      // Use ML analyzer with excluded letters
+      const solutions = await mlWordleAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters);
       
       // Convert probability (0-1) to percentage for display
       const solutionsWithPercentage = solutions.map(solution => ({
@@ -84,6 +100,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
     setGuessData(newGuessData);
     setSolutions([]);
     setWordInput('');
+    setExcludedLetters(new Set());
   };
 
   return (
@@ -121,6 +138,12 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
           </div>
         </div>
       </div>
+
+      <Keyboard
+        excludedLetters={excludedLetters}
+        onLetterExclude={handleLetterExclude}
+        onLetterInclude={handleLetterInclude}
+      />
 
       <div className="flex gap-3 justify-center flex-wrap">
         <Button 

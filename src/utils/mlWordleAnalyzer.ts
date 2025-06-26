@@ -10,16 +10,28 @@ class MLWordleAnalyzer {
   private constraintValidator = new ConstraintValidator();
   private probabilityCalculator = new ProbabilityCalculator();
 
-  async analyzeGuess(guessData: GuessData[], wordLength: number): Promise<MLWordleSolution[]> {
+  async analyzeGuess(guessData: GuessData[], wordLength: number, excludedLetters: Set<string> = new Set()): Promise<MLWordleSolution[]> {
     console.log('Starting ML analysis for guess:', guessData);
+    console.log('Excluded letters:', Array.from(excludedLetters));
     
     // Get all possible words for the given length
     const candidateWords = this.wordGenerator.getAllCandidateWords(wordLength);
     
-    // Filter words based on constraints
-    const validWords = candidateWords.filter(word => 
-      this.constraintValidator.satisfiesConstraints(word, guessData)
-    );
+    // Filter words based on constraints and excluded letters
+    const validWords = candidateWords.filter(word => {
+      // Check if word contains any excluded letters
+      if (excludedLetters.size > 0) {
+        const wordUpper = word.toUpperCase();
+        for (const excludedLetter of excludedLetters) {
+          if (wordUpper.includes(excludedLetter)) {
+            return false;
+          }
+        }
+      }
+      
+      // Check constraint satisfaction
+      return this.constraintValidator.satisfiesConstraints(word, guessData);
+    });
     
     // Score and rank the valid words
     const scoredWords = validWords.map(word => ({
