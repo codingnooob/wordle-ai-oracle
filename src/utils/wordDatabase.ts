@@ -39,12 +39,17 @@ export const WORD_DATABASE: { [key: number]: Array<{ word: string; frequency: nu
     { word: 'MIGHT', frequency: 63 }, { word: 'SHALL', frequency: 60 }, { word: 'STILL', frequency: 58 },
     { word: 'THOSE', frequency: 55 }, { word: 'WHILE', frequency: 53 }, { word: 'PLACE', frequency: 50 },
     { word: 'RIGHT', frequency: 48 }, { word: 'ABOUT', frequency: 45 }, { word: 'AGAIN', frequency: 43 },
-    { word: 'BEFORE', frequency: 40 }, { word: 'HOUSE', frequency: 38 }, { word: 'WORLD', frequency: 35 },
+    { word: 'HOUSE', frequency: 38 }, { word: 'WORLD', frequency: 35 },
     { word: 'BELOW', frequency: 33 }, { word: 'ASKED', frequency: 30 }, { word: 'GOING', frequency: 28 },
     { word: 'LARGE', frequency: 25 }, { word: 'UNTIL', frequency: 23 }, { word: 'ALONG', frequency: 20 },
-    { word: 'SHALL', frequency: 18 }, { word: 'BEING', frequency: 15 }, { word: 'OFTEN', frequency: 13 },
-    { word: 'SINCE', frequency: 10 }, { word: 'SOUND', frequency: 8 }, { word: 'MUSIC', frequency: 5 },
-    { word: 'PLANE', frequency: 3 }, { word: 'BREAD', frequency: 2 }, { word: 'FRUIT', frequency: 1 }
+    { word: 'OFTEN', frequency: 15 }, { word: 'SINCE', frequency: 13 },
+    { word: 'SOUND', frequency: 10 }, { word: 'MUSIC', frequency: 8 }, { word: 'PLANE', frequency: 6 },
+    { word: 'BREAD', frequency: 4 }, { word: 'FRUIT', frequency: 2 },
+    // Adding words that match the constraint example: C____ with L, E, R
+    { word: 'CLEAR', frequency: 75 }, { word: 'CLERK', frequency: 45 }, { word: 'CREST', frequency: 35 },
+    { word: 'CRUEL', frequency: 40 }, { word: 'CYBER', frequency: 30 }, { word: 'CYCLE', frequency: 50 },
+    { word: 'CRIME', frequency: 55 }, { word: 'CREAM', frequency: 48 }, { word: 'CREEK', frequency: 25 },
+    { word: 'CREEL', frequency: 15 }, { word: 'CREEP', frequency: 20 }, { word: 'CREME', frequency: 18 }
   ],
   6: [
     { word: 'SHOULD', frequency: 100 }, { word: 'AROUND', frequency: 95 }, { word: 'LITTLE', frequency: 90 },
@@ -59,7 +64,9 @@ export const WORD_DATABASE: { [key: number]: Array<{ word: string; frequency: nu
     { word: 'RATHER', frequency: 28 }, { word: 'REASON', frequency: 25 }, { word: 'SIMPLY', frequency: 23 },
     { word: 'REMAIN', frequency: 20 }, { word: 'HAPPEN', frequency: 18 }, { word: 'DIFFER', frequency: 15 },
     { word: 'ACTUAL', frequency: 13 }, { word: 'ATTACK', frequency: 10 }, { word: 'BATTLE', frequency: 8 },
-    { word: 'BREATH', frequency: 5 }, { word: 'BRANCH', frequency: 3 }
+    { word: 'BREATH', frequency: 5 }, { word: 'BRANCH', frequency: 3 },
+    // Adding more words for better matching
+    { word: 'CIRCLE', frequency: 45 }, { word: 'CLEVER', frequency: 35 }, { word: 'CLOSER', frequency: 40 }
   ],
   7: [
     { word: 'THROUGH', frequency: 100 }, { word: 'BETWEEN', frequency: 95 }, { word: 'ANOTHER', frequency: 90 },
@@ -73,8 +80,10 @@ export const WORD_DATABASE: { [key: number]: Array<{ word: string; frequency: nu
     { word: 'MACHINE', frequency: 35 }, { word: 'PRESENT', frequency: 33 }, { word: 'MORNING', frequency: 30 },
     { word: 'EVENING', frequency: 28 }, { word: 'QUALITY', frequency: 25 }, { word: 'PRIVATE', frequency: 23 },
     { word: 'POPULAR', frequency: 20 }, { word: 'CERTAIN', frequency: 18 }, { word: 'SERIOUS', frequency: 15 },
-    { word: 'HIMSELF', frequency: 13 }, { word: 'OFFICER', frequency: 10 }, { word: 'PERFECT', frequency: 8 },
-    { word: 'PREPARE', frequency: 5 }, { word: 'PROBLEM', frequency: 3 }
+    { word: 'OFFICER', frequency: 10 }, { word: 'PERFECT', frequency: 8 },
+    { word: 'PREPARE', frequency: 5 }, { word: 'PROBLEM', frequency: 3 },
+    // Adding words for constraint matching
+    { word: 'CLEANER', frequency: 35 }, { word: 'CLEARER', frequency: 30 }, { word: 'CLUSTER', frequency: 25 }
   ],
   8: [
     { word: 'BUSINESS', frequency: 100 }, { word: 'TOGETHER', frequency: 95 }, { word: 'CHILDREN', frequency: 90 },
