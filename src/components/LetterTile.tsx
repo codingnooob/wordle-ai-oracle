@@ -36,13 +36,14 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
     <div className="relative">
       <Input
         value={letter}
-        onChange={(e) => onLetterChange(e.target.value.slice(-1))}
+        onChange={() => {}} // Disabled - letters are set from the main word input
         onFocus={() => setIsActive(true)}
         onBlur={() => setIsActive(false)}
         className={`w-12 h-12 text-center text-xl font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} ${
           isActive ? 'ring-2 ring-blue-300 ring-offset-2' : ''
         }`}
         maxLength={1}
+        readOnly
       />
       <button
         onClick={cycleState}

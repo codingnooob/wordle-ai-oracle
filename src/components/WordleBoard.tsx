@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import LetterTile from '@/components/LetterTile';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { mlWordleAnalyzer } from '@/utils/mlWordleAnalyzer';
 import { Sparkles, RotateCcw, Brain } from 'lucide-react';
 
@@ -14,6 +15,7 @@ interface WordleBoardProps {
 
 const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: WordleBoardProps) => {
   const [analyzing, setAnalyzing] = useState(false);
+  const [wordInput, setWordInput] = useState('');
 
   useEffect(() => {
     // Initialize guess data when word length changes
@@ -22,11 +24,21 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
       state: 'unknown' as const
     }));
     setGuessData(newGuessData);
+    setWordInput('');
   }, [wordLength, setGuessData]);
 
-  const updateLetter = (index: number, letter: string) => {
+  const handleWordInputChange = (value: string) => {
+    const upperValue = value.toUpperCase().slice(0, wordLength);
+    setWordInput(upperValue);
+    
+    // Update guess data with the typed letters
     const newGuessData = [...guessData];
-    newGuessData[index] = { ...newGuessData[index], letter: letter.toUpperCase() };
+    for (let i = 0; i < wordLength; i++) {
+      newGuessData[i] = {
+        ...newGuessData[i],
+        letter: upperValue[i] || ''
+      };
+    }
     setGuessData(newGuessData);
   };
 
@@ -71,25 +83,42 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
     }));
     setGuessData(newGuessData);
     setSolutions([]);
+    setWordInput('');
   };
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-700">Enter your guess</h2>
         </div>
         
-        <div className="flex gap-2 justify-center flex-wrap">
-          {guessData.map((tile, index) => (
-            <LetterTile
-              key={index}
-              letter={tile.letter}
-              state={tile.state}
-              onLetterChange={(letter) => updateLetter(index, letter)}
-              onStateChange={(state) => updateState(index, state)}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="word-input" className="block text-sm font-medium text-slate-600 mb-2">
+              Type your word:
+            </label>
+            <Input
+              id="word-input"
+              value={wordInput}
+              onChange={(e) => handleWordInputChange(e.target.value)}
+              placeholder={`Enter ${wordLength}-letter word`}
+              className="text-center text-lg font-semibold uppercase tracking-wider"
+              maxLength={wordLength}
             />
-          ))}
+          </div>
+          
+          <div className="flex gap-2 justify-center flex-wrap">
+            {guessData.map((tile, index) => (
+              <LetterTile
+                key={index}
+                letter={tile.letter}
+                state={tile.state}
+                onLetterChange={() => {}} // Disabled since we use the word input now
+                onStateChange={(state) => updateState(index, state)}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
