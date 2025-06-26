@@ -8,7 +8,7 @@ interface GuessGridProps {
 
 const GuessGrid = ({ guessData, onStateChange }: GuessGridProps) => {
   return (
-    <div className="flex gap-3 sm:gap-4 justify-center flex-wrap mb-8 sm:mb-12 px-2 sm:px-0">
+    <div className="flex gap-2 justify-center flex-wrap mb-12">
       {guessData.map((tile, index) => (
         <LetterTile
           key={index}

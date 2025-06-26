@@ -38,13 +38,13 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
   };
 
   return (
-    <div className="relative mb-8 sm:mb-10 flex flex-col items-center min-w-0">
+    <div className="relative mb-10 flex flex-col items-center">
       <Input
         value={letter}
         onChange={() => {}} // Disabled - letters are set from the main word input
         onFocus={() => setIsActive(true)}
         onBlur={() => setIsActive(false)}
-        className={`w-9 h-9 sm:w-12 sm:h-12 text-center text-lg sm:text-xl font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} ${
+        className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-lg sm:text-xl font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} ${
           isActive ? 'ring-2 ring-blue-300 ring-offset-2' : ''
         }`}
         maxLength={1}
@@ -52,7 +52,7 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
       />
       <button
         onClick={cycleState}
-        className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-slate-500 hover:text-slate-700 transition-colors duration-200 whitespace-nowrap min-w-0 max-w-[50px] sm:max-w-[60px] text-center truncate"
+        className="mt-2 text-xs text-slate-500 hover:text-slate-700 transition-colors duration-200 whitespace-nowrap min-w-0 max-w-[60px] text-center truncate"
       >
         {getButtonText()}
       </button>
