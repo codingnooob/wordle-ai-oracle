@@ -66,7 +66,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
   };
 
   const handleAnalyze = async () => {
-    const hasValidInput = guessData.some(tile => tile.letter.trim() !== '');
+    const hasValidInput = guessData.every(tile => tile.letter.trim() !== '' && tile.state !== 'unknown');
     if (!hasValidInput) return;
 
     setAnalyzing(true);
@@ -98,7 +98,8 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setExcludedLetters(new Set());
   };
 
-  const hasValidInput = guessData.some(tile => tile.letter.trim() !== '');
+  // Updated validation: ALL tiles must have letters AND ALL tiles must have a state other than 'unknown'
+  const hasValidInput = guessData.every(tile => tile.letter.trim() !== '' && tile.state !== 'unknown');
 
   return (
     <div className="space-y-6">
