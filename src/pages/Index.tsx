@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import WordleBoard from '@/components/WordleBoard';
 import WordLengthSelector from '@/components/WordLengthSelector';
 import SolutionsList from '@/components/SolutionsList';
+import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { mlTrainingService } from '@/utils/ml/mlTrainingService';
 
@@ -67,6 +68,8 @@ const Index = () => {
             </Card>
           </div>
         </div>
+        
+        <Footer />
       </div>
     </div>
   );
