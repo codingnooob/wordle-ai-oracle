@@ -9,6 +9,8 @@ export class MLTrainingService {
   private wordQualityService = new WordQualityService();
   private cacheService = new CacheService();
   private isTraining = false;
+  private backgroundInterval: NodeJS.Timeout | null = null;
+  private trainingDataSize = 0;
 
   async performFullCorpusTraining(): Promise<{
     success: boolean;
@@ -28,7 +30,7 @@ export class MLTrainingService {
       console.log('⚡ Full corpus ML training cycle starting...');
 
       // Try to get cached data first
-      const cachedData = this.cacheService.getCachedScrapedData();
+      const cachedData = this.cacheService.getCachedData();
       let scrapedWords: string[];
       let fromCache = false;
 
@@ -45,7 +47,7 @@ export class MLTrainingService {
           throw new Error('Failed to obtain scraped data');
         }
 
-        this.cacheService.setCachedScrapedData(scrapedData);
+        this.cacheService.cacheScrapedData(scrapedData);
         scrapedWords = scrapedData.words;
         
         console.log(`✅ Fresh full corpus: ${scrapedData.words.length} selected from ${scrapedData.totalWords} scraped`);
@@ -57,6 +59,9 @@ export class MLTrainingService {
       
       // Update the ML analyzer with the real word corpus
       realMLAnalyzer.updateCorpus(processedWords);
+      
+      // Update training data size
+      this.trainingDataSize = processedWords.length;
 
       const duration = Date.now() - startTime;
       const retentionRate = ((processedWords.length / scrapedWords.length) * 100).toFixed(1);
@@ -76,6 +81,35 @@ export class MLTrainingService {
     } finally {
       this.isTraining = false;
     }
+  }
+
+  startBackgroundTraining(): void {
+    if (this.backgroundInterval) {
+      console.log('🔄 Background training already running');
+      return;
+    }
+
+    console.log('🚀 Starting background ML training...');
+    
+    // Start immediately
+    this.performFullCorpusTraining();
+    
+    // Then run every 30 seconds
+    this.backgroundInterval = setInterval(() => {
+      this.performFullCorpusTraining();
+    }, 30000);
+  }
+
+  stopBackgroundTraining(): void {
+    if (this.backgroundInterval) {
+      clearInterval(this.backgroundInterval);
+      this.backgroundInterval = null;
+      console.log('🛑 Background ML training stopped');
+    }
+  }
+
+  getTrainingDataSize(): number {
+    return this.trainingDataSize;
   }
 
   getTrainingStatus() {
