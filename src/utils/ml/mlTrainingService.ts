@@ -16,14 +16,14 @@ export class MLTrainingService {
   private wordQualityService = new WordQualityService();
 
   async startBackgroundTraining(): Promise<void> {
-    console.log('🚀 Starting ultra-high-frequency ML training service (5-second intervals)...');
+    console.log('🚀 Starting optimized ML training service (30-second intervals)...');
     
     await realMLAnalyzer.initialize();
 
-    // Ultra-high-frequency training: every 5 seconds!
+    // Optimized training frequency: every 30 seconds
     this.trainingInterval = setInterval(() => {
       this.performBackgroundTraining();
-    }, 5 * 1000); // 5 seconds
+    }, 30 * 1000); // 30 seconds for better performance
 
     // Perform initial training immediately
     await this.performBackgroundTraining();
@@ -34,13 +34,13 @@ export class MLTrainingService {
     
     this.isTraining = true;
     const startTime = Date.now();
-    console.log('⚡ Ultra-high-frequency ML training cycle starting...');
+    console.log('⚡ Optimized ML training cycle starting...');
 
     try {
       const cachedData = this.cacheService.getCachedData();
       
-      // With 30-second cache, we refresh very frequently
-      if (cachedData && Date.now() < cachedData.expiresAt && cachedData.totalWords > 500) {
+      // Check if we have valid, non-expired cached data
+      if (cachedData && cachedData.totalWords > 1000) {
         const ageMs = Date.now() - cachedData.cachedAt;
         const ageSeconds = Math.floor(ageMs / 1000);
         console.log(`📋 Using cached data: ${cachedData.totalWords} words (${ageSeconds}s old)`);
@@ -49,7 +49,7 @@ export class MLTrainingService {
         console.log('🔄 Cache expired/insufficient, performing fresh scraping...');
         const scrapedData = await this.webScrapingService.performWebScraping();
         
-        if (scrapedData) {
+        if (scrapedData && scrapedData.words.length > 0) {
           this.trainingData = scrapedData.words;
           this.cacheService.cacheScrapedData(scrapedData);
           
@@ -67,14 +67,15 @@ export class MLTrainingService {
         }
       }
       
-      // Process and validate training data
+      // Process and validate training data with less aggressive filtering
+      const originalCount = this.trainingData.length;
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
       const duration = Date.now() - startTime;
-      console.log(`⚡ Ultra-high-freq training cycle complete: ${this.trainingData.length} words (${duration}ms)`);
+      console.log(`⚡ Training cycle complete: ${originalCount}→${this.trainingData.length} words (${duration}ms)`);
       
     } catch (error) {
-      console.error('❌ Ultra-high-frequency training failed:', error);
+      console.error('❌ Training cycle failed:', error);
       
       this.trainingData = this.fallbackDataService.getExpandedFallbackData();
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
@@ -103,7 +104,7 @@ export class MLTrainingService {
       clearInterval(this.trainingInterval);
       this.trainingInterval = null;
     }
-    console.log('🛑 Ultra-high-frequency ML training stopped');
+    console.log('🛑 Optimized ML training stopped');
   }
 }
 

@@ -14,99 +14,123 @@ export class WebScraper {
   async scrapeFromTargets(staticTargets: ScrapingTarget[]): Promise<{ words: Set<string>; results: ScrapeResult[] }> {
     const allWords = new Set<string>();
     const scrapeResults: ScrapeResult[] = [];
+    const maxExecutionTime = 25000; // 25 seconds to stay within limits
+    const startTime = Date.now();
 
-    console.log('🚀 Starting MASSIVELY enhanced web scraping...');
+    console.log('🚀 Starting optimized multi-source scraping...');
 
-    // Get all possible sources
-    const [searchTargets, dynamicTargets] = await Promise.all([
-      this.getSearchTargets(),
-      this.dynamicSources.getExpandedSources()
-    ]);
-
-    // Local scraping with enhanced discovery
-    const localResults = await this.localScraper.performLocalScraping();
-    localResults.words.forEach(word => allWords.add(word));
-    scrapeResults.push(...localResults.results);
-    console.log(`🏠 Local scraping: ${localResults.words.size} words from ${localResults.results.length} sources`);
-
-    // Enhanced scraping on dynamic sources (books, news, educational)
-    const enhancedResults = await this.enhancedScraper.performEnhancedScraping(dynamicTargets);
-    enhancedResults.words.forEach(word => allWords.add(word));
-    scrapeResults.push(...enhancedResults.results);
-    console.log(`📚 Enhanced scraping: ${enhancedResults.words.size} words from ${enhancedResults.results.length} sources`);
-
-    // Combine all remaining targets
-    const allTargets = [
-      ...staticTargets,
-      ...searchTargets
-    ];
-
-    console.log(`📊 Processing ${allTargets.length} additional targets...`);
-
-    // High-speed scraping of remaining targets
-    for (const target of allTargets) {
-      try {
-        const response = await fetch(target.url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; WordBot/1.0; Educational)',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Connection': 'keep-alive'
-          },
-          signal: AbortSignal.timeout(8000)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const html = await response.text();
-        const words = this.extractWordsFromHtml(html);
-        
-        words.forEach(word => allWords.add(word));
-        
-        scrapeResults.push({
-          source: target.name,
-          wordCount: words.length,
-          success: true
-        });
-
-        console.log(`✓ ${words.length} words from ${target.name}`);
-        
-        // Ultra-short delay for maximum frequency
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-      } catch (error) {
-        console.error(`✗ Failed to scrape ${target.name}:`, error);
-        scrapeResults.push({
-          source: target.name,
-          wordCount: 0,
-          success: false
-        });
+    try {
+      // Phase 1: Quick local scraping (high success rate sources)
+      if (Date.now() - startTime < maxExecutionTime * 0.3) {
+        const localResults = await this.localScraper.performLocalScraping();
+        localResults.words.forEach(word => allWords.add(word));
+        scrapeResults.push(...localResults.results);
+        console.log(`🏠 Local: ${localResults.words.size} words from ${localResults.results.length} sources`);
       }
+
+      // Phase 2: Enhanced scraping (limited scope for performance)
+      if (Date.now() - startTime < maxExecutionTime * 0.6) {
+        const dynamicTargets = await this.dynamicSources.getExpandedSources();
+        const limitedTargets = dynamicTargets.slice(0, 10); // Limit for performance
+        
+        const enhancedResults = await this.enhancedScraper.performEnhancedScraping(limitedTargets);
+        enhancedResults.words.forEach(word => allWords.add(word));
+        scrapeResults.push(...enhancedResults.results);
+        console.log(`📚 Enhanced: ${enhancedResults.words.size} words from ${enhancedResults.results.length} sources`);
+      }
+
+      // Phase 3: Search-based targets (if time permits)
+      if (Date.now() - startTime < maxExecutionTime * 0.8) {
+        const searchTargets = await this.getSearchTargets();
+        const combinedTargets = [...staticTargets, ...searchTargets].slice(0, 15); // Limit total targets
+
+        await this.processBatchedTargets(combinedTargets, allWords, scrapeResults, maxExecutionTime - (Date.now() - startTime));
+      }
+
+    } catch (error) {
+      console.error('Phase processing error:', error);
     }
 
-    console.log(`🎯 MASSIVE scraping complete: ${allWords.size} total words from ${scrapeResults.length} sources`);
+    console.log(`🎯 Multi-phase scraping complete: ${allWords.size} total words from ${scrapeResults.length} sources`);
     return { words: allWords, results: scrapeResults };
+  }
+
+  private async processBatchedTargets(
+    targets: ScrapingTarget[], 
+    allWords: Set<string>, 
+    scrapeResults: ScrapeResult[], 
+    remainingTime: number
+  ): Promise<void> {
+    const batchSize = 5;
+    const timePerBatch = remainingTime / Math.ceil(targets.length / batchSize);
+
+    for (let i = 0; i < targets.length; i += batchSize) {
+      const batchStartTime = Date.now();
+      const batch = targets.slice(i, i + batchSize);
+      
+      await Promise.allSettled(
+        batch.map(async (target) => {
+          try {
+            const response = await fetch(target.url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; WordBot/1.0; Educational)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              },
+              signal: AbortSignal.timeout(5000) // Reduced timeout
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const html = await response.text();
+            const words = this.extractWordsFromHtml(html);
+            
+            words.forEach(word => allWords.add(word));
+            
+            scrapeResults.push({
+              source: target.name,
+              wordCount: words.length,
+              success: true
+            });
+
+            console.log(`✓ ${words.length} words from ${target.name}`);
+            
+          } catch (error) {
+            console.error(`✗ Failed ${target.name}:`, error.message);
+            scrapeResults.push({
+              source: target.name,
+              wordCount: 0,
+              success: false
+            });
+          }
+        })
+      );
+
+      // Check if we're running out of time
+      if (Date.now() - batchStartTime > timePerBatch) {
+        console.log('⏰ Time limit approaching, stopping batch processing');
+        break;
+      }
+
+      // Small delay between batches
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
 
   private async getSearchTargets(): Promise<ScrapingTarget[]> {
     const apiKey = Deno.env.get('BRAVE_SEARCH_API_KEY');
     
     if (apiKey) {
-      console.log('🔍 Using search API for additional targets');
       try {
         return await this.searchService.findWordSources();
       } catch (error) {
         console.warn('Search API failed:', error);
       }
-    } else {
-      console.log('🕷️ Using local discovery for additional targets');
-      try {
-        return await this.localScraper.discoverWordSources();
-      } catch (error) {
-        console.warn('Local discovery failed:', error);
-      }
+    }
+    
+    try {
+      return await this.localScraper.discoverWordSources();
+    } catch (error) {
+      console.warn('Local discovery failed:', error);
     }
     
     return [];
@@ -115,28 +139,21 @@ export class WebScraper {
   private extractWordsFromHtml(html: string): string[] {
     const words = new Set<string>();
     
-    // Enhanced extraction with multiple passes
+    // More efficient extraction
     const textContent = html
       .replace(/<script[^>]*>.*?<\/script>/gis, '')
       .replace(/<style[^>]*>.*?<\/style>/gis, '')
       .replace(/<[^>]*>/g, ' ')
       .replace(/&[^;]+;/g, ' ');
     
-    // Multiple word extraction patterns
-    const patterns = [
-      /\b[a-zA-Z]{3,8}\b/g,  // Standard words
-      /[A-Z][a-z]{2,7}\b/g,  // Capitalized words
-      /\b[a-z]{3,8}(?=\s)/g  // Words followed by space
-    ];
+    // Single comprehensive pattern
+    const matches = textContent.match(/\b[a-zA-Z]{3,8}\b/g) || [];
     
-    patterns.forEach(pattern => {
-      const matches = textContent.match(pattern) || [];
-      matches.forEach(word => {
-        const cleanWord = word.toUpperCase().trim();
-        if (this.isValidWord(cleanWord)) {
-          words.add(cleanWord);
-        }
-      });
+    matches.forEach(word => {
+      const cleanWord = word.toUpperCase().trim();
+      if (this.isValidWord(cleanWord)) {
+        words.add(cleanWord);
+      }
     });
     
     return Array.from(words);
@@ -144,10 +161,16 @@ export class WebScraper {
 
   private isValidWord(word: string): boolean {
     if (word.length < 3 || word.length > 8 || !/^[A-Z]+$/.test(word)) return false;
+    
+    // More permissive vowel check
     if (!/[AEIOU]/.test(word)) return false;
-    if (/[BCDFGHJKLMNPQRSTVWXYZ]{4,}/.test(word)) return false;
-    if (/^[XZ]/.test(word)) return false;
-    if (/(.)\1{2,}/.test(word)) return false;
+    
+    // Less restrictive consonant clustering
+    if (/[BCDFGHJKLMNPQRSTVWXYZ]{5,}/.test(word)) return false;
+    
+    // Allow more repeated patterns
+    if (/(.)\1{4,}/.test(word)) return false;
+    
     return true;
   }
 }

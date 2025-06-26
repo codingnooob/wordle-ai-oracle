@@ -1,38 +1,40 @@
 
 export class WordQualityService {
   processTrainingData(words: string[]): string[] {
-    // Reduced filtering to allow more diverse words
-    return [...new Set(words)]
-      .filter(word => this.isQualityWord(word));
+    // Much more permissive filtering to maximize word diversity
+    const uniqueWords = [...new Set(words)];
+    const processedWords = uniqueWords.filter(word => this.isQualityWord(word));
+    
+    console.log(`📊 Word processing: ${words.length} raw → ${uniqueWords.length} unique → ${processedWords.length} filtered`);
+    return processedWords;
   }
 
   private isQualityWord(word: string): boolean {
-    // More permissive filtering to increase word diversity
+    // Basic length and character validation
     if (word.length < 3 || word.length > 8) return false;
     if (!/^[A-Z]+$/.test(word)) return false;
     
     const vowels = 'AEIOU';
     const vowelCount = word.split('').filter(char => vowels.includes(char)).length;
     
-    // Must have at least one vowel, but more permissive ratios
+    // Must have at least one vowel
     if (vowelCount === 0) return false;
     
+    // Very permissive vowel ratio (almost anything goes)
     const vowelRatio = vowelCount / word.length;
-    // More permissive vowel ratio (was 0.15-0.8, now 0.1-0.9)
-    if (vowelRatio < 0.1 || vowelRatio > 0.9) return false;
+    if (vowelRatio > 0.95) return false; // Only reject if ALL vowels
     
-    // Allow more consonant clusters (was 4+, now 5+)
-    if (/[BCDFGHJKLMNPQRSTVWXYZ]{5,}/.test(word)) return false;
+    // Allow more consonant clusters (only reject extreme cases)
+    if (/[BCDFGHJKLMNPQRSTVWXYZ]{6,}/.test(word)) return false;
     
-    // Less restrictive on starting letters (removed X/Z restriction)
+    // Allow most repeated patterns (only reject extreme repetition)
+    if (/(.)\1{4,}/.test(word)) return false;
     
-    // Allow more repeated patterns (was 2, now 3)
-    if (/(.)\1{3,}/.test(word)) return false;
+    // Accept common abbreviations and acronyms
+    const commonPatterns = /^(USA|DNA|RNA|CPU|GPU|API|URL|PDF|XML|HTML|CSS|SQL|PHP)$/;
+    if (commonPatterns.test(word)) return true;
     
-    // Additional checks for very common words to avoid over-filtering
-    const commonWords = ['THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'DAY', 'HAD', 'HAS', 'HIS', 'HOW', 'ITS', 'MAY', 'NEW', 'NOW', 'OLD', 'SEE', 'TWO', 'WHO', 'BOY', 'DID', 'GET', 'LET', 'MAN', 'RUN', 'SUN', 'TOP', 'WAY', 'WIN', 'YES', 'YET'];
-    if (commonWords.includes(word)) return true;
-    
+    // Accept most everything else
     return true;
   }
 }

@@ -14,7 +14,7 @@ interface CachedScrapedData extends ScrapedData {
 
 export class CacheService {
   private readonly CACHE_KEY = 'ml_scraped_data';
-  private readonly CACHE_DURATION = 10 * 1000; // 10 seconds for maximum freshness
+  private readonly CACHE_DURATION = 30 * 1000; // 30 seconds for better refresh rate
 
   getCachedData(): CachedScrapedData | null {
     try {
@@ -24,26 +24,38 @@ export class CacheService {
       const data = JSON.parse(cached) as CachedScrapedData;
       
       if (!data.words || !Array.isArray(data.words) || !data.expiresAt) {
+        console.log('🗂️ Invalid cache data structure, clearing cache');
+        this.clearCache();
+        return null;
+      }
+      
+      // Check if cache is actually expired
+      const now = Date.now();
+      if (now >= data.expiresAt) {
+        console.log('🗂️ Cache expired, clearing old data');
+        this.clearCache();
         return null;
       }
       
       return data;
     } catch (error) {
       console.error('Failed to get cached data:', error);
+      this.clearCache();
       return null;
     }
   }
 
   cacheScrapedData(data: ScrapedData): void {
     try {
+      const now = Date.now();
       const cachedData: CachedScrapedData = {
         ...data,
-        cachedAt: Date.now(),
-        expiresAt: Date.now() + this.CACHE_DURATION
+        cachedAt: now,
+        expiresAt: now + this.CACHE_DURATION
       };
       
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(cachedData));
-      console.log(`🗂️ Cached ${data.totalWords} words for 10 seconds (maximum freshness mode)`);
+      console.log(`🗂️ Cached ${data.totalWords} words for 30 seconds (expires at ${new Date(cachedData.expiresAt).toLocaleTimeString()})`);
     } catch (error) {
       console.error('Failed to cache scraped data:', error);
     }
@@ -56,11 +68,13 @@ export class CacheService {
       return { cached: false };
     }
     
-    const ageMs = Date.now() - cached.cachedAt;
+    const now = Date.now();
+    const ageMs = now - cached.cachedAt;
     const ageSeconds = Math.floor(ageMs / 1000);
+    const isExpired = now >= cached.expiresAt;
     
     return {
-      cached: Date.now() < cached.expiresAt,
+      cached: !isExpired,
       age: `${ageSeconds}s`,
       size: cached.totalWords
     };
