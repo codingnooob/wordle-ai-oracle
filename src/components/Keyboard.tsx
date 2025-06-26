@@ -36,7 +36,7 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
           onClick={clearAll}
           variant="outline" 
           size="sm"
-          className="text-xs px-1 py-0.5 sm:px-2 sm:py-1"
+          className="text-xs px-1 py-0.5 sm:px-2 sm:py-1 h-5 sm:h-auto"
         >
           Clear All
         </Button>
@@ -51,14 +51,14 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
                 onClick={() => toggleLetter(letter)}
                 variant={excludedLetters.has(letter) ? "default" : "outline"}
                 size="sm"
-                className={`w-3 h-3 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs font-semibold transition-all duration-200 ${
+                className={`w-5 h-5 sm:w-7 sm:h-7 xl:w-8 xl:h-8 p-0 text-xs font-semibold transition-all duration-200 ${
                   excludedLetters.has(letter) 
                     ? 'bg-red-500 hover:bg-red-600 text-white' 
                     : 'hover:bg-slate-100'
                 }`}
               >
                 {excludedLetters.has(letter) ? (
-                  <X className="h-1 w-1 sm:h-3 sm:w-3" />
+                  <X className="h-2 w-2 sm:h-3 sm:w-3" />
                 ) : (
                   letter
                 )}
