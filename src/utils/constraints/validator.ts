@@ -5,12 +5,21 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   const wordUpper = word.toUpperCase();
   
   console.log(`\n=== Validating word "${wordUpper}" ===`);
+  console.log('Constraints:', {
+    correctPositions: Array.from(constraints.correctPositions.entries()),
+    presentLetters: Array.from(constraints.presentLetters),
+    absentLetters: Array.from(constraints.absentLetters),
+    positionExclusions: Array.from(constraints.positionExclusions.entries()).map(([pos, letters]) => [pos, Array.from(letters)]),
+    letterCounts: Array.from(constraints.letterCounts.entries())
+  });
 
   // Step 1: Check correct positions
   for (const [position, letter] of constraints.correctPositions) {
     if (wordUpper[position] !== letter) {
       console.log(`❌ Wrong letter at position ${position}, expected ${letter}, got ${wordUpper[position]}`);
       return false;
+    } else {
+      console.log(`✅ Correct letter at position ${position}: ${letter}`);
     }
   }
 
@@ -21,6 +30,7 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
       return false;
     }
   }
+  console.log(`✅ No absent letters found in word`);
 
   // Step 3: Check present letters placement
   if (!canPlacePresentLettersCorrectly(wordUpper, constraints)) {
@@ -31,6 +41,7 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   // Step 4: Check letter count constraints
   for (const [letter, countConstraint] of constraints.letterCounts) {
     const actualCount = wordUpper.split('').filter(l => l === letter).length;
+    console.log(`Checking letter count for ${letter}: actual=${actualCount}, min=${countConstraint.min}, max=${countConstraint.max}`);
     if (actualCount < countConstraint.min) {
       console.log(`❌ Insufficient count of letter ${letter}, needs at least ${countConstraint.min}, has ${actualCount}`);
       return false;
@@ -74,6 +85,8 @@ function canPlacePresentLettersCorrectly(word: string, constraints: WordConstrai
       const isExcluded = excludedLettersAtPosition && excludedLettersAtPosition.has(presentLetter);
       const correctLetterAtPos = constraints.correctPositions.get(pos);
       const isOccupiedByDifferentCorrectLetter = correctLetterAtPos && correctLetterAtPos !== presentLetter;
+      
+      console.log(`Position ${pos}: excluded=${isExcluded}, occupiedByDifferent=${isOccupiedByDifferentCorrectLetter}`);
       
       if (!isExcluded && !isOccupiedByDifferentCorrectLetter) {
         hasValidPosition = true;
