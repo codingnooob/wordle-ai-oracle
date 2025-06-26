@@ -11,17 +11,17 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('🚀 Starting high-frequency web scraping with local fallback...');
+  console.log('🚀 Starting MASSIVE high-frequency web scraping...');
 
   try {
-    const { maxWords = 20000 } = await req.json().catch(() => ({})); // Increased capacity
+    const { maxWords = 50000 } = await req.json().catch(() => ({})); // Massively increased capacity
     
     const scraper = new WebScraper();
     const { words: allWords, results: scrapeResults } = await scraper.scrapeFromTargets(SCRAPING_TARGETS);
 
-    // If we didn't get enough words, add more fallback content
-    if (allWords.size < 3000) { // Higher threshold for quality
-      console.log('📚 Adding fallback word content...');
+    // Add fallback words if we still don't have enough
+    if (allWords.size < 5000) { // Even higher threshold
+      console.log('📚 Adding comprehensive fallback content...');
       const fallbackWords = getFallbackWords();
       fallbackWords.forEach(word => allWords.add(word));
     }
@@ -36,15 +36,15 @@ const handler = async (req: Request): Promise<Response> => {
       timestamp: new Date().toISOString()
     };
 
-    const apiMode = Deno.env.get('BRAVE_SEARCH_API_KEY') ? 'API + Local' : 'Local Only';
-    console.log(`✅ High-frequency scraping complete (${apiMode}): ${finalWords.length} words from ${scrapeResults.length} sources`);
+    const apiMode = Deno.env.get('BRAVE_SEARCH_API_KEY') ? 'API + Enhanced' : 'Enhanced Local';
+    console.log(`✅ MASSIVE scraping complete (${apiMode}): ${finalWords.length} words from ${scrapeResults.length} sources`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ High-frequency scraping failed:', error);
+    console.error('❌ MASSIVE scraping failed:', error);
     
     // Return enhanced fallback data
     const fallbackWords = getFallbackWords();
