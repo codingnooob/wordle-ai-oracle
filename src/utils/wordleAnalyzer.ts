@@ -1,4 +1,3 @@
-
 import { getWordsForLength } from './wordDatabase';
 import { 
   analyzeConstraints, 
@@ -131,24 +130,21 @@ class WordleAnalyzer {
     // Sort by score (highest first)
     validWords.sort((a, b) => b.score - a.score);
     
-    // Convert scores to realistic probabilities
-    const maxScore = validWords[0].score;
-    const minScore = validWords[validWords.length - 1].score;
-    const scoreRange = maxScore - minScore;
+    // Enhanced probability calculation to avoid all 95% results
+    const totalScore = validWords.reduce((sum, word) => sum + word.score, 0);
     
     const solutions: WordleSolution[] = validWords.map((item, index) => {
-      // Calculate probability based on score relative to others
-      let probability: number;
+      // Calculate probability based on score proportion and position
+      const scoreRatio = item.score / totalScore;
+      const positionPenalty = Math.pow(0.85, index); // Exponential decay by position
+      const baseProbability = (scoreRatio * 100 * positionPenalty);
       
-      if (scoreRange === 0) {
-        // All words have same score, distribute evenly
-        probability = Math.max(20, 90 - (index * 5));
+      // Ensure realistic distribution: top word gets highest, others diminish
+      let probability: number;
+      if (index === 0) {
+        probability = Math.min(85, Math.max(45, baseProbability * 100));
       } else {
-        // Use score-based probability with diminishing returns
-        const normalizedScore = (item.score - minScore) / scoreRange;
-        const baseProbability = 20 + (normalizedScore * 60); // 20-80% range
-        const positionPenalty = index * 3; // Reduce by position
-        probability = Math.max(10, Math.min(85, baseProbability - positionPenalty));
+        probability = Math.min(75, Math.max(5, baseProbability * 80));
       }
       
       return {
