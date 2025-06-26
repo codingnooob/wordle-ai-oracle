@@ -33,7 +33,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
   }, [wordLength, setGuessData]);
 
   useEffect(() => {
-    // Check ML training status and cache status periodically
+    // Check ML training status and cache status very frequently (every 2 seconds)
     const statusInterval = setInterval(() => {
       const status = mlWordleAnalyzer.getTrainingStatus();
       setMlStatus(status);
@@ -43,7 +43,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
         const cache = (mlWordleAnalyzer as any).getCacheStatus();
         setCacheStatus(cache);
       }
-    }, 5000);
+    }, 2000);
 
     return () => clearInterval(statusInterval);
   }, []);
@@ -132,7 +132,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
             {!cacheStatus.cached && mlStatus.dataSize > 0 && (
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                Live scraping active
+                Live scraping active (5s intervals)
               </div>
             )}
           </div>

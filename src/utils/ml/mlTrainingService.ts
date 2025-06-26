@@ -16,14 +16,14 @@ export class MLTrainingService {
   private wordQualityService = new WordQualityService();
 
   async startBackgroundTraining(): Promise<void> {
-    console.log('🚀 Starting high-frequency ML training service (30-second intervals)...');
+    console.log('🚀 Starting ultra-high-frequency ML training service (5-second intervals)...');
     
     await realMLAnalyzer.initialize();
 
-    // High-frequency training: every 30 seconds!
+    // Ultra-high-frequency training: every 5 seconds!
     this.trainingInterval = setInterval(() => {
       this.performBackgroundTraining();
-    }, 30 * 1000); // 30 seconds
+    }, 5 * 1000); // 5 seconds
 
     // Perform initial training immediately
     await this.performBackgroundTraining();
@@ -34,12 +34,12 @@ export class MLTrainingService {
     
     this.isTraining = true;
     const startTime = Date.now();
-    console.log('⚡ High-frequency ML training cycle starting...');
+    console.log('⚡ Ultra-high-frequency ML training cycle starting...');
 
     try {
       const cachedData = this.cacheService.getCachedData();
       
-      // With 5-minute cache, we refresh frequently but not wastefully
+      // With 30-second cache, we refresh very frequently
       if (cachedData && Date.now() < cachedData.expiresAt && cachedData.totalWords > 500) {
         const ageMs = Date.now() - cachedData.cachedAt;
         const ageSeconds = Math.floor(ageMs / 1000);
@@ -71,10 +71,10 @@ export class MLTrainingService {
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
       const duration = Date.now() - startTime;
-      console.log(`⚡ High-freq training cycle complete: ${this.trainingData.length} words (${duration}ms)`);
+      console.log(`⚡ Ultra-high-freq training cycle complete: ${this.trainingData.length} words (${duration}ms)`);
       
     } catch (error) {
-      console.error('❌ High-frequency training failed:', error);
+      console.error('❌ Ultra-high-frequency training failed:', error);
       
       this.trainingData = this.fallbackDataService.getExpandedFallbackData();
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
@@ -103,7 +103,7 @@ export class MLTrainingService {
       clearInterval(this.trainingInterval);
       this.trainingInterval = null;
     }
-    console.log('🛑 High-frequency ML training stopped');
+    console.log('🛑 Ultra-high-frequency ML training stopped');
   }
 }
 

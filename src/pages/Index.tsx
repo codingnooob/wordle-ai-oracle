@@ -1,15 +1,27 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import WordleBoard from '@/components/WordleBoard';
 import WordLengthSelector from '@/components/WordLengthSelector';
 import SolutionsList from '@/components/SolutionsList';
 import { Card } from '@/components/ui/card';
+import { mlTrainingService } from '@/utils/ml/mlTrainingService';
 
 const Index = () => {
   const [wordLength, setWordLength] = useState(5);
   const [guessData, setGuessData] = useState<Array<{letter: string, state: 'unknown' | 'absent' | 'present' | 'correct'}>>([]);
   const [solutions, setSolutions] = useState<Array<{word: string, probability: number}>>([]);
   const [analyzing, setAnalyzing] = useState(false);
+
+  useEffect(() => {
+    // Start continuous scraping immediately when the page loads
+    console.log('🚀 Starting continuous ML training on page load...');
+    mlTrainingService.startBackgroundTraining();
+
+    // Cleanup on unmount
+    return () => {
+      mlTrainingService.stopBackgroundTraining();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
