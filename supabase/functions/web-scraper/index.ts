@@ -11,17 +11,17 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('Starting enhanced web scraping process with search integration...');
+  console.log('🚀 Starting high-frequency web scraping with local fallback...');
 
   try {
-    const { maxWords = 15000 } = await req.json().catch(() => ({})); // Increased from 5000
+    const { maxWords = 20000 } = await req.json().catch(() => ({})); // Increased capacity
     
     const scraper = new WebScraper();
     const { words: allWords, results: scrapeResults } = await scraper.scrapeFromTargets(SCRAPING_TARGETS);
 
-    // If we didn't get enough words from scraping, add fallback content
-    if (allWords.size < 2000) { // Increased threshold from 1000
-      console.log('Adding fallback word content...');
+    // If we didn't get enough words, add more fallback content
+    if (allWords.size < 3000) { // Higher threshold for quality
+      console.log('📚 Adding fallback word content...');
       const fallbackWords = getFallbackWords();
       fallbackWords.forEach(word => allWords.add(word));
     }
@@ -36,16 +36,17 @@ const handler = async (req: Request): Promise<Response> => {
       timestamp: new Date().toISOString()
     };
 
-    console.log(`Enhanced web scraping complete: ${finalWords.length} total words from ${scrapeResults.length} sources`);
+    const apiMode = Deno.env.get('BRAVE_SEARCH_API_KEY') ? 'API + Local' : 'Local Only';
+    console.log(`✅ High-frequency scraping complete (${apiMode}): ${finalWords.length} words from ${scrapeResults.length} sources`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Enhanced web scraping failed:', error);
+    console.error('❌ High-frequency scraping failed:', error);
     
-    // Return fallback data if scraping completely fails
+    // Return enhanced fallback data
     const fallbackWords = getFallbackWords();
     
     const response: ScrapingResponse = {
@@ -58,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     return new Response(JSON.stringify(response), {
-      status: 200, // Still return 200 since we have fallback data
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

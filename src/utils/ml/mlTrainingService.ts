@@ -16,15 +16,16 @@ export class MLTrainingService {
   private wordQualityService = new WordQualityService();
 
   async startBackgroundTraining(): Promise<void> {
-    console.log('Starting background ML training service with frequent web scraping...');
+    console.log('🚀 Starting high-frequency ML training service (30-second intervals)...');
     
     await realMLAnalyzer.initialize();
 
-    // Check every 5 minutes instead of 30 seconds for more frequent updates
+    // High-frequency training: every 30 seconds!
     this.trainingInterval = setInterval(() => {
       this.performBackgroundTraining();
-    }, 5 * 60 * 1000);
+    }, 30 * 1000); // 30 seconds
 
+    // Perform initial training immediately
     await this.performBackgroundTraining();
   }
 
@@ -32,46 +33,54 @@ export class MLTrainingService {
     if (this.isTraining) return;
     
     this.isTraining = true;
-    console.log('Performing background ML training with enhanced web scraping...');
+    const startTime = Date.now();
+    console.log('⚡ High-frequency ML training cycle starting...');
 
     try {
       const cachedData = this.cacheService.getCachedData();
       
-      // With 30-minute cache, we'll refresh more frequently
+      // With 5-minute cache, we refresh frequently but not wastefully
       if (cachedData && Date.now() < cachedData.expiresAt && cachedData.totalWords > 500) {
-        console.log(`Using cached scraped data: ${cachedData.totalWords} words (expires in ${Math.round((cachedData.expiresAt - Date.now()) / 60000)} minutes)`);
+        const ageMs = Date.now() - cachedData.cachedAt;
+        const ageSeconds = Math.floor(ageMs / 1000);
+        console.log(`📋 Using cached data: ${cachedData.totalWords} words (${ageSeconds}s old)`);
         this.trainingData = cachedData.words;
       } else {
-        console.log('Cache expired or insufficient data, performing fresh enhanced web scraping...');
+        console.log('🔄 Cache expired/insufficient, performing fresh scraping...');
         const scrapedData = await this.webScrapingService.performWebScraping();
         
         if (scrapedData) {
           this.trainingData = scrapedData.words;
           this.cacheService.cacheScrapedData(scrapedData);
           
-          console.log(`Enhanced web scraping completed: ${scrapedData.totalWords} words`);
+          console.log(`✅ Fresh scraping: ${scrapedData.totalWords} words`);
           
           if (scrapedData.fallback) {
-            console.warn('Web scraping used fallback data due to network issues');
+            console.warn('⚠️ Using fallback data due to network issues');
           } else {
-            console.log('Enhanced scraping results:', scrapedData.scrapeResults);
+            const successfulScrapes = scrapedData.scrapeResults.filter(r => r.success).length;
+            console.log(`📊 Scraping results: ${successfulScrapes}/${scrapedData.scrapeResults.length} sources successful`);
           }
         } else {
           this.trainingData = this.fallbackDataService.getExpandedFallbackData();
-          console.warn(`Enhanced web scraping failed, using expanded fallback: ${this.trainingData.length} words`);
+          console.warn(`🔄 Scraping failed, using fallback: ${this.trainingData.length} words`);
         }
       }
       
+      // Process and validate training data
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
-      console.log(`Training completed with ${this.trainingData.length} data points (refreshes every 30 minutes)`);
+      const duration = Date.now() - startTime;
+      console.log(`⚡ High-freq training cycle complete: ${this.trainingData.length} words (${duration}ms)`);
+      
     } catch (error) {
-      console.error('Background training failed:', error);
+      console.error('❌ High-frequency training failed:', error);
       
       this.trainingData = this.fallbackDataService.getExpandedFallbackData();
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
-      console.log(`Fallback training completed with ${this.trainingData.length} data points`);
+      const duration = Date.now() - startTime;
+      console.log(`🔄 Fallback training: ${this.trainingData.length} words (${duration}ms)`);
     } finally {
       this.isTraining = false;
     }
@@ -94,7 +103,7 @@ export class MLTrainingService {
       clearInterval(this.trainingInterval);
       this.trainingInterval = null;
     }
-    console.log('Background ML training stopped');
+    console.log('🛑 High-frequency ML training stopped');
   }
 }
 

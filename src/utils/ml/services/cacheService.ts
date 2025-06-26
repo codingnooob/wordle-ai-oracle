@@ -14,7 +14,7 @@ interface CachedScrapedData extends ScrapedData {
 
 export class CacheService {
   private readonly CACHE_KEY = 'ml_scraped_data';
-  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes instead of 6 hours
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for high-frequency updates
 
   getCachedData(): CachedScrapedData | null {
     try {
@@ -43,7 +43,7 @@ export class CacheService {
       };
       
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(cachedData));
-      console.log(`Cached ${data.totalWords} words for 30 minutes`);
+      console.log(`🗂️ Cached ${data.totalWords} words for 5 minutes (high-frequency mode)`);
     } catch (error) {
       console.error('Failed to cache scraped data:', error);
     }
@@ -57,12 +57,12 @@ export class CacheService {
     }
     
     const ageMs = Date.now() - cached.cachedAt;
-    const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
-    const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60));
+    const ageMinutes = Math.floor(ageMs / (1000 * 60));
+    const ageSeconds = Math.floor((ageMs % (1000 * 60)) / 1000);
     
     return {
       cached: Date.now() < cached.expiresAt,
-      age: `${ageHours}h ${ageMinutes}m`,
+      age: ageMinutes > 0 ? `${ageMinutes}m ${ageSeconds}s` : `${ageSeconds}s`,
       size: cached.totalWords
     };
   }
@@ -70,7 +70,7 @@ export class CacheService {
   clearCache(): void {
     try {
       localStorage.removeItem(this.CACHE_KEY);
-      console.log('Scraped data cache cleared');
+      console.log('🗑️ Scraped data cache cleared');
     } catch (error) {
       console.error('Failed to clear cache:', error);
     }
