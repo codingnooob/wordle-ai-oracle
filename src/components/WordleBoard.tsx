@@ -18,6 +18,7 @@ interface WordleBoardProps {
 const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyzing, setAnalyzing }: WordleBoardProps) => {
   const [wordInput, setWordInput] = useState('');
   const [excludedLetters, setExcludedLetters] = useState<Set<string>>(new Set());
+  const [mlStatus, setMlStatus] = useState({ isTraining: false, dataSize: 0 });
 
   useEffect(() => {
     // Initialize guess data when word length changes
@@ -29,6 +30,16 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setWordInput('');
     setExcludedLetters(new Set());
   }, [wordLength, setGuessData]);
+
+  useEffect(() => {
+    // Check ML training status periodically
+    const statusInterval = setInterval(() => {
+      const status = mlWordleAnalyzer.getTrainingStatus();
+      setMlStatus(status);
+    }, 5000);
+
+    return () => clearInterval(statusInterval);
+  }, []);
 
   const handleWordInputChange = (value: string) => {
     const upperValue = value.toUpperCase().slice(0, wordLength);
@@ -69,23 +80,16 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
 
     setAnalyzing(true);
     try {
-      console.log('Starting ML analysis for guess:', guessData);
+      console.log('Starting real ML analysis for guess:', guessData);
       console.log('Excluded letters:', Array.from(excludedLetters));
       
-      // Use ML analyzer with excluded letters
+      // Use real ML analyzer
       const solutions = await mlWordleAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters);
+      setSolutions(solutions);
       
-      // Convert probability (0-1) to percentage for display
-      const solutionsWithPercentage = solutions.map(solution => ({
-        word: solution.word,
-        probability: Math.round(solution.probability * 100 * 10) / 10 // Convert to percentage with 1 decimal
-      }));
-      
-      setSolutions(solutionsWithPercentage);
-      
-      console.log('ML Analysis complete:', solutionsWithPercentage);
+      console.log('Real ML Analysis complete:', solutions);
     } catch (error) {
-      console.error('ML Analysis failed:', error);
+      console.error('Real ML Analysis failed:', error);
       setSolutions([]);
     } finally {
       setAnalyzing(false);
@@ -108,6 +112,11 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-700">Enter your guess</h2>
+          {mlStatus.dataSize > 0 && (
+            <div className="text-xs text-slate-500">
+              ML trained on {mlStatus.dataSize} words
+            </div>
+          )}
         </div>
         
         <div className="space-y-4">
@@ -154,12 +163,12 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
           {analyzing ? (
             <>
               <Brain className="mr-2 h-4 w-4 animate-pulse" />
-              AI Thinking...
+              Real AI Analyzing...
             </>
           ) : (
             <>
               <Brain className="mr-2 h-4 w-4" />
-              AI Predict
+              Real AI Predict
             </>
           )}
         </Button>
