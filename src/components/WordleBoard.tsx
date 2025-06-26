@@ -19,6 +19,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
   const [wordInput, setWordInput] = useState('');
   const [excludedLetters, setExcludedLetters] = useState<Set<string>>(new Set());
   const [mlStatus, setMlStatus] = useState({ isTraining: false, dataSize: 0 });
+  const [cacheStatus, setCacheStatus] = useState<{ cached: boolean; age?: string; size?: number }>({ cached: false });
 
   useEffect(() => {
     // Initialize guess data when word length changes
@@ -32,10 +33,16 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
   }, [wordLength, setGuessData]);
 
   useEffect(() => {
-    // Check ML training status periodically
+    // Check ML training status and cache status periodically
     const statusInterval = setInterval(() => {
       const status = mlWordleAnalyzer.getTrainingStatus();
       setMlStatus(status);
+      
+      // Get cache status if available
+      if (typeof (mlWordleAnalyzer as any).getCacheStatus === 'function') {
+        const cache = (mlWordleAnalyzer as any).getCacheStatus();
+        setCacheStatus(cache);
+      }
     }, 5000);
 
     return () => clearInterval(statusInterval);
@@ -112,11 +119,23 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-700">Enter your guess</h2>
-          {mlStatus.dataSize > 0 && (
-            <div className="text-xs text-slate-500">
-              ML trained on {mlStatus.dataSize} words
-            </div>
-          )}
+          <div className="text-xs text-slate-500 space-y-1">
+            {mlStatus.dataSize > 0 && (
+              <div>Real ML trained on {mlStatus.dataSize.toLocaleString()} words</div>
+            )}
+            {cacheStatus.cached && (
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                Cached ({cacheStatus.age}, {cacheStatus.size?.toLocaleString()} words)
+              </div>
+            )}
+            {!cacheStatus.cached && mlStatus.dataSize > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                Live scraping active
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="space-y-4">
