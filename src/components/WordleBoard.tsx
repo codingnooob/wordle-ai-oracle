@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import LetterTile from '@/components/LetterTile';
 import Keyboard from '@/components/Keyboard';
@@ -12,10 +11,11 @@ interface WordleBoardProps {
   guessData: Array<{letter: string, state: 'unknown' | 'absent' | 'present' | 'correct'}>;
   setGuessData: (data: Array<{letter: string, state: 'unknown' | 'absent' | 'present' | 'correct'}>) => void;
   setSolutions: (solutions: Array<{word: string, probability: number}>) => void;
+  analyzing: boolean;
+  setAnalyzing: (analyzing: boolean) => void;
 }
 
-const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: WordleBoardProps) => {
-  const [analyzing, setAnalyzing] = useState(false);
+const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyzing, setAnalyzing }: WordleBoardProps) => {
   const [wordInput, setWordInput] = useState('');
   const [excludedLetters, setExcludedLetters] = useState<Set<string>>(new Set());
 
@@ -154,7 +154,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions }: Word
           {analyzing ? (
             <>
               <Brain className="mr-2 h-4 w-4 animate-pulse" />
-              AI Analyzing...
+              AI Thinking...
             </>
           ) : (
             <>

@@ -1,11 +1,12 @@
 
-import { Trophy, Target, Brain, Zap } from 'lucide-react';
+import { Trophy, Target, Brain, Zap, AlertCircle } from 'lucide-react';
 
 interface SolutionsListProps {
   solutions: Array<{word: string, probability: number}>;
+  analyzing: boolean;
 }
 
-const SolutionsList = ({ solutions }: SolutionsListProps) => {
+const SolutionsList = ({ solutions, analyzing }: SolutionsListProps) => {
   const getIcon = (index: number) => {
     if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" />;
     if (index === 1) return <Target className="h-5 w-5 text-orange-500" />;
@@ -22,14 +23,22 @@ const SolutionsList = ({ solutions }: SolutionsListProps) => {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-slate-700 flex items-center gap-2">
-        <Brain className="h-5 w-5 text-purple-500" />
+        <Brain className={`h-5 w-5 text-purple-500 ${analyzing ? 'animate-pulse' : ''}`} />
         ML Predictions
+        {analyzing && <span className="text-sm text-slate-500 font-normal">- AI Thinking...</span>}
       </h2>
       
-      {solutions.length === 0 ? (
+      {analyzing ? (
         <div className="text-center py-8 text-slate-500">
-          <Brain className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-          <p>Enter your guess and click "AI Predict" to see machine learning predictions</p>
+          <Brain className="h-12 w-12 mx-auto mb-3 text-purple-400 animate-pulse" />
+          <p className="text-lg font-medium">AI is analyzing your guess...</p>
+          <p className="text-sm">This may take a few seconds</p>
+        </div>
+      ) : solutions.length === 0 ? (
+        <div className="text-center py-8 text-slate-500">
+          <AlertCircle className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+          <p className="text-lg font-medium">No predictions found</p>
+          <p className="text-sm">Try adjusting your guess or excluded letters</p>
         </div>
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">

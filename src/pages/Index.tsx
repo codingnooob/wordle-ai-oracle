@@ -9,6 +9,7 @@ const Index = () => {
   const [wordLength, setWordLength] = useState(5);
   const [guessData, setGuessData] = useState<Array<{letter: string, state: 'unknown' | 'absent' | 'present' | 'correct'}>>([]);
   const [solutions, setSolutions] = useState<Array<{word: string, probability: number}>>([]);
+  const [analyzing, setAnalyzing] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
@@ -31,6 +32,7 @@ const Index = () => {
                 onLengthChange={() => {
                   setGuessData([]);
                   setSolutions([]);
+                  setAnalyzing(false);
                 }}
               />
             </Card>
@@ -41,13 +43,15 @@ const Index = () => {
                 guessData={guessData}
                 setGuessData={setGuessData}
                 setSolutions={setSolutions}
+                analyzing={analyzing}
+                setAnalyzing={setAnalyzing}
               />
             </Card>
           </div>
           
           <div>
             <Card className="p-6 shadow-lg border-0 bg-white/70 backdrop-blur-sm h-fit">
-              <SolutionsList solutions={solutions} />
+              <SolutionsList solutions={solutions} analyzing={analyzing} />
             </Card>
           </div>
         </div>
