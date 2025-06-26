@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface ScrapedData {
   words: string[];
   totalWords: number;
-  totalScraped?: number; // Added to track total scraped words
+  totalScraped?: number;
   scrapeResults: Array<{ source: string; wordCount: number; success: boolean }>;
   timestamp: string;
   fallback?: boolean;
@@ -16,10 +16,10 @@ export class WebScrapingService {
 
   async performWebScraping(attempt = 1): Promise<ScrapedData | null> {
     try {
-      console.log(`Attempting web scraping (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS})...`);
+      console.log(`Attempting full corpus web scraping (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS})...`);
       
       const { data, error } = await supabase.functions.invoke('web-scraper', {
-        body: { maxWords: 50000 } // Increased from 10K to 50K
+        body: { maxWords: 200000 } // Request full corpus up to 200K words
       });
 
       if (error) {
@@ -30,15 +30,16 @@ export class WebScrapingService {
         throw new Error('Invalid response format from web scraper');
       }
 
-      // Log the response size information
+      // Log the full corpus information
       if (data.totalScraped) {
-        console.log(`📊 Scraping result: ${data.totalWords} selected from ${data.totalScraped} total scraped words`);
+        console.log(`📊 Full corpus result: ${data.totalWords} selected from ${data.totalScraped} total scraped words`);
+        console.log(`📈 Corpus utilization: ${((data.totalWords / data.totalScraped) * 100).toFixed(1)}% of available words`);
       }
 
       return data as ScrapedData;
       
     } catch (error) {
-      console.error(`Web scraping attempt ${attempt} failed:`, error);
+      console.error(`Full corpus scraping attempt ${attempt} failed:`, error);
       
       if (attempt < this.MAX_RETRY_ATTEMPTS) {
         await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY * attempt));

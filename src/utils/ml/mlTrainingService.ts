@@ -1,3 +1,4 @@
+
 import { realMLAnalyzer } from './realMLAnalyzer';
 import { WebScrapingService } from './services/webScrapingService';
 import { CacheService } from './services/cacheService';
@@ -15,11 +16,11 @@ export class MLTrainingService {
   private wordQualityService = new WordQualityService();
 
   async startBackgroundTraining(): Promise<void> {
-    console.log('🚀 Starting optimized ML training service (30-second intervals)...');
+    console.log('🚀 Starting full corpus ML training service (30-second intervals)...');
     
     await realMLAnalyzer.initialize();
 
-    // Optimized training frequency: every 30 seconds
+    // Training frequency: every 30 seconds
     this.trainingInterval = setInterval(() => {
       this.performBackgroundTraining();
     }, 30 * 1000);
@@ -33,20 +34,20 @@ export class MLTrainingService {
     
     this.isTraining = true;
     const startTime = Date.now();
-    console.log('⚡ Optimized ML training cycle starting...');
+    console.log('⚡ Full corpus ML training cycle starting...');
 
     try {
       const cachedData = this.cacheService.getCachedData();
       
-      // Always check time-based expiration first (prioritize freshness)
+      // Check time-based expiration first
       if (cachedData && cachedData.totalWords > 1000) {
-        console.log(`📋 Using valid cached data: ${cachedData.totalWords} words (${Math.floor((Date.now() - cachedData.cachedAt) / 1000)}s old)`);
+        console.log(`📋 Using cached full corpus: ${cachedData.totalWords} words (${Math.floor((Date.now() - cachedData.cachedAt) / 1000)}s old)`);
         if (cachedData.totalScraped) {
-          console.log(`📊 Cache info: ${cachedData.totalWords} selected from ${cachedData.totalScraped} total scraped`);
+          console.log(`📊 Full corpus cache: ${cachedData.totalWords} selected from ${cachedData.totalScraped} total available`);
         }
         this.trainingData = cachedData.words;
       } else {
-        console.log('🔄 No valid cached data, performing fresh scraping...');
+        console.log('🔄 No valid cache, performing fresh full corpus scraping...');
         
         const scrapedData = await this.webScrapingService.performWebScraping();
         
@@ -54,32 +55,33 @@ export class MLTrainingService {
           this.trainingData = scrapedData.words;
           this.cacheService.cacheScrapedData(scrapedData);
           
-          const scrapedInfo = scrapedData.totalScraped 
+          const corpusInfo = scrapedData.totalScraped 
             ? `${scrapedData.totalWords} selected from ${scrapedData.totalScraped} scraped`
             : `${scrapedData.totalWords} words`;
-          console.log(`✅ Fresh scraping: ${scrapedInfo}`);
+          console.log(`✅ Fresh full corpus: ${corpusInfo}`);
           
           if (scrapedData.fallback) {
             console.warn('⚠️ Using fallback data due to network issues');
           } else {
             const successfulScrapes = scrapedData.scrapeResults.filter(r => r.success).length;
-            console.log(`📊 Scraping results: ${successfulScrapes}/${scrapedData.scrapeResults.length} sources successful`);
+            console.log(`📊 Full corpus scraping: ${successfulScrapes}/${scrapedData.scrapeResults.length} sources successful`);
           }
         } else {
-          console.warn('🔄 Fresh scraping failed, using fallback data');
+          console.warn('🔄 Full corpus scraping failed, using fallback data');
           this.trainingData = this.fallbackDataService.getExpandedFallbackData();
         }
       }
       
-      // Process and validate training data (less aggressive filtering to keep more words)
+      // Process training data with minimal filtering to preserve full corpus
       const originalCount = this.trainingData.length;
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
       
       const duration = Date.now() - startTime;
-      console.log(`⚡ Training cycle complete: ${originalCount}→${this.trainingData.length} words (${duration}ms)`);
+      const utilizationRate = originalCount > 0 ? ((this.trainingData.length / originalCount) * 100).toFixed(1) : '0';
+      console.log(`⚡ Full corpus training complete: ${originalCount}→${this.trainingData.length} words (${utilizationRate}% retention, ${duration}ms)`);
       
     } catch (error) {
-      console.error('❌ Training cycle failed:', error);
+      console.error('❌ Full corpus training cycle failed:', error);
       
       this.trainingData = this.fallbackDataService.getExpandedFallbackData();
       this.trainingData = this.wordQualityService.processTrainingData(this.trainingData);
@@ -100,7 +102,7 @@ export class MLTrainingService {
   }
 
   clearCache(): void {
-    console.log('🗑️ Manually clearing cache to force fresh data...');
+    console.log('🗑️ Manually clearing cache to force fresh full corpus data...');
     this.cacheService.clearCache();
   }
 
@@ -109,7 +111,7 @@ export class MLTrainingService {
       clearInterval(this.trainingInterval);
       this.trainingInterval = null;
     }
-    console.log('🛑 Optimized ML training stopped');
+    console.log('🛑 Full corpus ML training stopped');
   }
 }
 

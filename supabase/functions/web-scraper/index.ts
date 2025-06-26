@@ -15,7 +15,7 @@ const handler = async (req: Request): Promise<Response> => {
   const startTime = Date.now();
 
   try {
-    const { maxWords = 50000 } = await req.json().catch(() => ({})); // Increased from 15K to 50K
+    const { maxWords = 200000 } = await req.json().catch(() => ({})); // Increased to 200K to accommodate full corpus
     
     const scraper = new WebScraper();
     const { words: allWords, results: scrapeResults } = await scraper.scrapeFromTargets(SCRAPING_TARGETS);
@@ -27,22 +27,24 @@ const handler = async (req: Request): Promise<Response> => {
       fallbackWords.forEach(word => allWords.add(word));
     }
 
-    // Convert to array but don't limit - let the client handle filtering
+    // Convert to array - use the FULL corpus without artificial selection limits
     const allWordsArray = Array.from(allWords);
     
-    // Smart selection: prioritize diverse word lengths and common patterns
-    const smartSelection = this.selectDiverseWords(allWordsArray, maxWords);
+    // Return the full filtered corpus instead of artificially limiting it
+    const finalWords = allWordsArray.length > maxWords ? 
+      selectDiverseWords(allWordsArray, maxWords) : 
+      allWordsArray;
     
     const processingTime = Date.now() - startTime;
     const response: ScrapingResponse = {
-      words: smartSelection,
-      totalWords: smartSelection.length,
-      totalScraped: allWordsArray.length, // Include total scraped count
+      words: finalWords,
+      totalWords: finalWords.length,
+      totalScraped: allWordsArray.length,
       scrapeResults,
       timestamp: new Date().toISOString()
     };
 
-    console.log(`✅ Optimized scraping complete: ${smartSelection.length} selected words from ${allWordsArray.length} total scraped (${scrapeResults.length} sources) in ${processingTime}ms`);
+    console.log(`✅ Full corpus scraping complete: ${finalWords.length} words from ${allWordsArray.length} total scraped (${scrapeResults.length} sources) in ${processingTime}ms`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,11 +73,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-// Smart word selection function to maximize diversity
+// Smart word selection function to maximize diversity (only used if corpus exceeds 200K)
 function selectDiverseWords(words: string[], maxCount: number): string[] {
   if (words.length <= maxCount) return words;
   
-  // Group words by length
+  // Group words by length for balanced distribution
   const wordsByLength: { [key: number]: string[] } = {};
   words.forEach(word => {
     const len = word.length;
@@ -105,7 +107,7 @@ function selectDiverseWords(words: string[], maxCount: number): string[] {
     selected.push(...shuffledRemaining.slice(0, maxCount - selected.length));
   }
   
-  console.log(`📊 Smart selection: ${selected.length} words from ${words.length} total (${lengths.length} length categories)`);
+  console.log(`📊 Diversity selection: ${selected.length} words from ${words.length} total (${lengths.length} length categories)`);
   return selected.slice(0, maxCount);
 }
 
