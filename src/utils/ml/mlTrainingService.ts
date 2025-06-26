@@ -38,22 +38,32 @@ export class MLTrainingService {
 
     try {
       const cachedData = this.cacheService.getCachedData();
+      const now = Date.now();
       
-      // Check if we have valid, non-expired cached data
-      if (cachedData && cachedData.totalWords > 1000) {
-        const ageMs = Date.now() - cachedData.cachedAt;
+      // FIXED: Check time-based expiration first, regardless of word count
+      const isCacheExpired = !cachedData || now >= cachedData.expiresAt;
+      
+      if (!isCacheExpired && cachedData.totalWords > 1000) {
+        const ageMs = now - cachedData.cachedAt;
         const ageSeconds = Math.floor(ageMs / 1000);
-        console.log(`📋 Using cached data: ${cachedData.totalWords} words (${ageSeconds}s old)`);
+        console.log(`📋 Using valid cached data: ${cachedData.totalWords} words (${ageSeconds}s old)`);
         this.trainingData = cachedData.words;
       } else {
-        console.log('🔄 Cache expired/insufficient, performing fresh scraping...');
+        if (cachedData) {
+          const ageMs = now - cachedData.cachedAt;
+          const ageSeconds = Math.floor(ageMs / 1000);
+          console.log(`🔄 Cache expired (${ageSeconds}s old), performing fresh scraping...`);
+        } else {
+          console.log('🔄 No cached data, performing fresh scraping...');
+        }
+        
         const scrapedData = await this.webScrapingService.performWebScraping();
         
         if (scrapedData && scrapedData.words.length > 0) {
           this.trainingData = scrapedData.words;
           this.cacheService.cacheScrapedData(scrapedData);
           
-          console.log(`✅ Fresh scraping: ${scrapedData.totalWords} words`);
+          console.log(`✅ Fresh scraping: ${scrapedData.totalWords} words (up from cached data)`);
           
           if (scrapedData.fallback) {
             console.warn('⚠️ Using fallback data due to network issues');
@@ -62,8 +72,8 @@ export class MLTrainingService {
             console.log(`📊 Scraping results: ${successfulScrapes}/${scrapedData.scrapeResults.length} sources successful`);
           }
         } else {
+          console.warn('🔄 Fresh scraping failed, using fallback data');
           this.trainingData = this.fallbackDataService.getExpandedFallbackData();
-          console.warn(`🔄 Scraping failed, using fallback: ${this.trainingData.length} words`);
         }
       }
       
@@ -96,6 +106,7 @@ export class MLTrainingService {
   }
 
   clearCache(): void {
+    console.log('🗑️ Manually clearing cache to force fresh data...');
     this.cacheService.clearCache();
   }
 

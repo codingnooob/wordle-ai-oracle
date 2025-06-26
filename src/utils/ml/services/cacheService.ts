@@ -73,6 +73,7 @@ export class CacheService {
     const ageSeconds = Math.floor(ageMs / 1000);
     const isExpired = now >= cached.expiresAt;
     
+    // FIXED: Return proper status based on actual expiration
     return {
       cached: !isExpired,
       age: `${ageSeconds}s`,
