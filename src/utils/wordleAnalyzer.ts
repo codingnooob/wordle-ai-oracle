@@ -1,3 +1,4 @@
+
 import { getWordsForLength } from './wordDatabase';
 import { 
   analyzeConstraints, 
@@ -14,15 +15,7 @@ export interface WordleSolution {
 }
 
 class WordleAnalyzer {
-  private guessHistory: GuessHistory[] = [];
-  private persistentMode: boolean = false;
-
-  setPersistentMode(enabled: boolean) {
-    this.persistentMode = enabled;
-    if (!enabled) {
-      this.clearHistory();
-    }
-  }
+  private currentGuess: GuessHistory | null = null;
 
   addGuess(guessData: GuessData[]) {
     // Create a proper deep copy to prevent circular references
@@ -31,47 +24,33 @@ class WordleAnalyzer {
       state: tile.state
     }));
 
-    const newGuess = {
+    this.currentGuess = {
       guess: deepCopyGuess,
       timestamp: Date.now()
     };
-
-    if (this.persistentMode) {
-      this.guessHistory.push(newGuess);
-    } else {
-      // In non-persistent mode, only keep the current guess
-      this.guessHistory = [newGuess];
-    }
     
-    console.log('Added guess to history:', newGuess);
-    console.log('Total history length:', this.guessHistory.length);
+    console.log('Set current guess:', this.currentGuess);
   }
 
   clearHistory() {
-    this.guessHistory = [];
+    this.currentGuess = null;
   }
 
   getHistory(): GuessHistory[] {
-    // Return proper deep copies to avoid mutations
-    return this.guessHistory.map(h => ({
-      guess: h.guess.map(tile => ({
-        letter: tile.letter,
-        state: tile.state
-      })),
-      timestamp: h.timestamp
-    }));
+    // Return current guess as single-item array for compatibility
+    return this.currentGuess ? [this.currentGuess] : [];
   }
 
   async analyzeCurrentState(wordLength: number): Promise<WordleSolution[]> {
-    if (this.guessHistory.length === 0) {
-      console.log('No guess history available');
+    if (!this.currentGuess) {
+      console.log('No current guess available');
       return [];
     }
 
-    console.log('Analyzing word constraints with history:', this.guessHistory);
+    console.log('Analyzing word constraints with current guess:', this.currentGuess);
 
-    // Analyze all constraints from history
-    const constraints = analyzeConstraints(this.guessHistory);
+    // Analyze constraints from the single current guess
+    const constraints = analyzeConstraints([this.currentGuess]);
     console.log('Generated constraints:', constraints);
 
     // Find potential matches for debugging
@@ -122,7 +101,7 @@ class WordleAnalyzer {
       console.log('❌ No valid words found! Possible reasons:');
       console.log('1. The constraints are too restrictive');
       console.log('2. The word database might not contain the target word');
-      console.log('3. There might be conflicting constraints from multiple guesses');
+      console.log('3. There might be conflicting constraints');
       console.log('4. Check if all present letters can be placed in valid positions');
       return [];
     }
