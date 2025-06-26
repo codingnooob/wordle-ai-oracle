@@ -28,7 +28,6 @@ export function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraint
 
   // Track all letters we've seen and their states across all guesses
   const letterStates = new Map<string, Set<string>>();
-  const letterPositionHistory = new Map<string, { correctPositions: Set<number>; excludedPositions: Set<number> }>();
 
   for (const history of guessHistory) {
     for (let i = 0; i < history.guess.length; i++) {
@@ -40,20 +39,17 @@ export function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraint
       // Initialize tracking for this letter if needed
       if (!letterStates.has(letter)) {
         letterStates.set(letter, new Set());
-        letterPositionHistory.set(letter, { correctPositions: new Set(), excludedPositions: new Set() });
       }
       
       letterStates.get(letter)!.add(tile.state);
-      const positionHistory = letterPositionHistory.get(letter)!;
 
       switch (tile.state) {
         case 'correct':
           constraints.correctPositions.set(i, letter);
-          positionHistory.correctPositions.add(i);
           break;
         case 'present':
           constraints.presentLetters.add(letter);
-          positionHistory.excludedPositions.add(i);
+          // Add position exclusion
           if (!constraints.positionExclusions.has(i)) {
             constraints.positionExclusions.set(i, new Set());
           }
@@ -93,12 +89,12 @@ export function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraint
 export function validateWordAgainstConstraints(word: string, constraints: WordConstraints): boolean {
   const wordUpper = word.toUpperCase();
   
-  console.log(`Validating word "${wordUpper}" against constraints`);
+  console.log(`\n=== Validating word "${wordUpper}" ===`);
 
   // Step 1: Check correct positions
   for (const [position, letter] of constraints.correctPositions) {
     if (wordUpper[position] !== letter) {
-      console.log(`❌ ${wordUpper}: Wrong letter at position ${position}, expected ${letter}, got ${wordUpper[position]}`);
+      console.log(`❌ Wrong letter at position ${position}, expected ${letter}, got ${wordUpper[position]}`);
       return false;
     }
   }
@@ -106,7 +102,7 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   // Step 2: Check absent letters are not in the word
   for (const letter of constraints.absentLetters) {
     if (wordUpper.includes(letter)) {
-      console.log(`❌ ${wordUpper}: Contains absent letter ${letter}`);
+      console.log(`❌ Contains absent letter ${letter}`);
       return false;
     }
   }
@@ -115,99 +111,132 @@ export function validateWordAgainstConstraints(word: string, constraints: WordCo
   for (const [letter, countConstraint] of constraints.letterCounts) {
     const actualCount = wordUpper.split('').filter(l => l === letter).length;
     if (actualCount < countConstraint.min) {
-      console.log(`❌ ${wordUpper}: Insufficient count of letter ${letter}, needs at least ${countConstraint.min}, has ${actualCount}`);
+      console.log(`❌ Insufficient count of letter ${letter}, needs at least ${countConstraint.min}, has ${actualCount}`);
       return false;
     }
     if (countConstraint.max !== undefined && actualCount > countConstraint.max) {
-      console.log(`❌ ${wordUpper}: Too many instances of letter ${letter}, max ${countConstraint.max}, has ${actualCount}`);
+      console.log(`❌ Too many instances of letter ${letter}, max ${countConstraint.max}, has ${actualCount}`);
       return false;
     }
   }
 
   // Step 4: Check if all present letters can be placed in valid positions
-  if (!canPlacePresentLetters(wordUpper, constraints)) {
-    console.log(`❌ ${wordUpper}: Cannot place all present letters in valid positions`);
+  if (!canPlacePresentLettersCorrectly(wordUpper, constraints)) {
+    console.log(`❌ Cannot place all present letters in valid positions`);
     return false;
   }
 
-  console.log(`✅ ${wordUpper}: Valid word!`);
+  console.log(`✅ "${wordUpper}" is VALID!`);
   return true;
 }
 
-function canPlacePresentLetters(word: string, constraints: WordConstraints): boolean {
-  // Get all positions that are not already taken by correct letters
-  const availablePositions = new Set<number>();
-  for (let i = 0; i < word.length; i++) {
-    if (!constraints.correctPositions.has(i)) {
-      availablePositions.add(i);
-    }
-  }
-
-  // For each present letter, find positions where it can be placed
-  const letterPositionOptions = new Map<string, Set<number>>();
+function canPlacePresentLettersCorrectly(word: string, constraints: WordConstraints): boolean {
+  console.log(`\n--- Checking present letter placement for "${word}" ---`);
   
-  for (const letter of constraints.presentLetters) {
-    const validPositions = new Set<number>();
+  // For each present letter, we need to verify:
+  // 1. The letter exists in the word
+  // 2. The letter is NOT in any of its excluded positions
+  // 3. All present letters can be satisfied simultaneously
+  
+  for (const presentLetter of constraints.presentLetters) {
+    console.log(`Checking present letter: ${presentLetter}`);
     
-    for (const pos of availablePositions) {
-      // Check if this letter is excluded from this position
-      const excludedLetters = constraints.positionExclusions.get(pos) || new Set();
-      if (!excludedLetters.has(letter)) {
-        // Check if the word actually has this letter at this position
-        if (word[pos] === letter) {
-          validPositions.add(pos);
-        }
+    // Find all positions where this letter appears in the word
+    const letterPositions: number[] = [];
+    for (let i = 0; i < word.length; i++) {
+      if (word[i] === presentLetter) {
+        letterPositions.push(i);
       }
     }
     
-    if (validPositions.size === 0) {
-      console.log(`❌ Present letter ${letter} has no valid positions available`);
+    if (letterPositions.length === 0) {
+      console.log(`❌ Letter ${presentLetter} not found in word`);
       return false;
     }
     
-    letterPositionOptions.set(letter, validPositions);
-  }
-
-  // Check if we can assign each present letter to a unique position
-  return canAssignLettersToPositions(letterPositionOptions, word);
-}
-
-function canAssignLettersToPositions(letterPositionOptions: Map<string, Set<number>>, word: string): boolean {
-  const letters = Array.from(letterPositionOptions.keys());
-  const usedPositions = new Set<number>();
-  
-  // Try to find a valid assignment using backtracking
-  function backtrack(letterIndex: number): boolean {
-    if (letterIndex === letters.length) {
-      return true; // All letters assigned successfully
-    }
+    console.log(`Letter ${presentLetter} found at positions: [${letterPositions.join(', ')}]`);
     
-    const letter = letters[letterIndex];
-    const possiblePositions = letterPositionOptions.get(letter)!;
+    // Check if this letter has any valid positions (not excluded and not occupied by correct letters)
+    const excludedPositions = constraints.positionExclusions.get(presentLetter) || new Set();
+    const validPositions: number[] = [];
     
-    for (const position of possiblePositions) {
-      if (!usedPositions.has(position) && word[position] === letter) {
-        usedPositions.add(position);
-        if (backtrack(letterIndex + 1)) {
-          return true;
-        }
-        usedPositions.delete(position);
+    for (const pos of letterPositions) {
+      // Position is valid if:
+      // 1. It's not excluded for this letter
+      // 2. It's not occupied by a correct letter (unless it's the same letter)
+      const isExcluded = Array.from(excludedPositions).some(excludedPos => excludedPos === pos);
+      const correctLetterAtPos = constraints.correctPositions.get(pos);
+      const isOccupiedByDifferentCorrectLetter = correctLetterAtPos && correctLetterAtPos !== presentLetter;
+      
+      if (!isExcluded && !isOccupiedByDifferentCorrectLetter) {
+        validPositions.push(pos);
       }
     }
     
-    return false;
+    console.log(`Letter ${presentLetter} valid positions: [${validPositions.join(', ')}] (excluded: [${Array.from(excludedPositions).join(', ')}])`);
+    
+    if (validPositions.length === 0) {
+      console.log(`❌ Letter ${presentLetter} has no valid positions`);
+      return false;
+    }
   }
   
-  const result = backtrack(0);
-  if (!result) {
-    console.log(`❌ Cannot find valid assignment for present letters:`, 
-      Array.from(letterPositionOptions.entries()).map(([letter, positions]) => 
-        `${letter}: [${Array.from(positions).join(',')}]`
-      )
-    );
+  // If we get here, each present letter has at least one valid position
+  // Now we need to check if there's a valid assignment of all present letters
+  return hasValidLetterAssignment(word, constraints);
+}
+
+function hasValidLetterAssignment(word: string, constraints: WordConstraints): boolean {
+  console.log(`\n--- Checking letter assignment for "${word}" ---`);
+  
+  // Create a map of letter -> required count from present letters
+  const presentLettersArray = Array.from(constraints.presentLetters);
+  const letterRequirements = new Map<string, number>();
+  
+  for (const letter of presentLettersArray) {
+    letterRequirements.set(letter, (letterRequirements.get(letter) || 0) + 1);
   }
   
-  return result;
+  console.log('Required present letters:', Array.from(letterRequirements.entries()));
+  
+  // For each required letter, check if the word can satisfy it
+  for (const [letter, requiredCount] of letterRequirements) {
+    // Count how many times this letter appears in valid positions
+    let validOccurrences = 0;
+    const excludedPositions = new Set<number>();
+    
+    // Add excluded positions for this letter
+    const letterExclusions = constraints.positionExclusions.get(letter);
+    if (letterExclusions) {
+      for (const pos of letterExclusions) {
+        excludedPositions.add(pos);
+      }
+    }
+    
+    // Add positions occupied by correct letters (different letters)
+    for (const [pos, correctLetter] of constraints.correctPositions) {
+      if (correctLetter !== letter) {
+        excludedPositions.add(pos);
+      }
+    }
+    
+    // Count valid occurrences
+    for (let i = 0; i < word.length; i++) {
+      if (word[i] === letter && !excludedPositions.has(i)) {
+        validOccurrences++;
+      }
+    }
+    
+    console.log(`Letter ${letter}: needs ${requiredCount}, has ${validOccurrences} valid occurrences (excluded positions: [${Array.from(excludedPositions).join(', ')}])`);
+    
+    if (validOccurrences < requiredCount) {
+      console.log(`❌ Not enough valid positions for letter ${letter}`);
+      return false;
+    }
+  }
+  
+  console.log(`✅ All present letters can be satisfied`);
+  return true;
 }
 
 // Add a function to find example words that might work
