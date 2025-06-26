@@ -1,10 +1,12 @@
+
 import { useState, useEffect } from 'react';
-import LetterTile from '@/components/LetterTile';
+import WordInput from '@/components/WordInput';
+import GuessGrid from '@/components/GuessGrid';
 import Keyboard from '@/components/Keyboard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import AnalysisControls from '@/components/AnalysisControls';
+import MLStatusIndicator from '@/components/MLStatusIndicator';
+import { useMLStatus } from '@/hooks/useMLStatus';
 import { mlWordleAnalyzer } from '@/utils/mlWordleAnalyzer';
-import { Sparkles, RotateCcw, Brain } from 'lucide-react';
 
 interface WordleBoardProps {
   wordLength: number;
@@ -18,8 +20,7 @@ interface WordleBoardProps {
 const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyzing, setAnalyzing }: WordleBoardProps) => {
   const [wordInput, setWordInput] = useState('');
   const [excludedLetters, setExcludedLetters] = useState<Set<string>>(new Set());
-  const [mlStatus, setMlStatus] = useState({ isTraining: false, dataSize: 0 });
-  const [cacheStatus, setCacheStatus] = useState<{ cached: boolean; age?: string; size?: number }>({ cached: false });
+  const { mlStatus, cacheStatus } = useMLStatus();
 
   useEffect(() => {
     // Initialize guess data when word length changes
@@ -32,32 +33,15 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setExcludedLetters(new Set());
   }, [wordLength, setGuessData]);
 
-  useEffect(() => {
-    // Check ML training status and cache status very frequently (every 2 seconds)
-    const statusInterval = setInterval(() => {
-      const status = mlWordleAnalyzer.getTrainingStatus();
-      setMlStatus(status);
-      
-      // Get cache status if available
-      if (typeof (mlWordleAnalyzer as any).getCacheStatus === 'function') {
-        const cache = (mlWordleAnalyzer as any).getCacheStatus();
-        setCacheStatus(cache);
-      }
-    }, 2000);
-
-    return () => clearInterval(statusInterval);
-  }, []);
-
   const handleWordInputChange = (value: string) => {
-    const upperValue = value.toUpperCase().slice(0, wordLength);
-    setWordInput(upperValue);
+    setWordInput(value);
     
     // Update guess data with the typed letters
     const newGuessData = [...guessData];
     for (let i = 0; i < wordLength; i++) {
       newGuessData[i] = {
         ...newGuessData[i],
-        letter: upperValue[i] || ''
+        letter: value[i] || ''
       };
     }
     setGuessData(newGuessData);
@@ -114,56 +98,27 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setExcludedLetters(new Set());
   };
 
+  const hasValidInput = guessData.some(tile => tile.letter.trim() !== '');
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-700">Enter your guess</h2>
-          <div className="text-xs text-slate-500 space-y-1">
-            {mlStatus.dataSize > 0 && (
-              <div>Real ML trained on {mlStatus.dataSize.toLocaleString()} words</div>
-            )}
-            {cacheStatus.cached && (
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-                Cached ({cacheStatus.age}, {cacheStatus.size?.toLocaleString()} words)
-              </div>
-            )}
-            {!cacheStatus.cached && mlStatus.dataSize > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                Live scraping active (5s intervals)
-              </div>
-            )}
-          </div>
+          <MLStatusIndicator mlStatus={mlStatus} cacheStatus={cacheStatus} />
         </div>
         
         <div className="space-y-4">
-          <div>
-            <label htmlFor="word-input" className="block text-sm font-medium text-slate-600 mb-2">
-              Type your word:
-            </label>
-            <Input
-              id="word-input"
-              value={wordInput}
-              onChange={(e) => handleWordInputChange(e.target.value)}
-              placeholder={`Enter ${wordLength}-letter word`}
-              className="text-center text-lg font-semibold uppercase tracking-wider"
-              maxLength={wordLength}
-            />
-          </div>
+          <WordInput
+            value={wordInput}
+            onChange={handleWordInputChange}
+            wordLength={wordLength}
+          />
           
-          <div className="flex gap-2 justify-center flex-wrap">
-            {guessData.map((tile, index) => (
-              <LetterTile
-                key={index}
-                letter={tile.letter}
-                state={tile.state}
-                onLetterChange={() => {}} // Disabled since we use the word input now
-                onStateChange={(state) => updateState(index, state)}
-              />
-            ))}
-          </div>
+          <GuessGrid
+            guessData={guessData}
+            onStateChange={updateState}
+          />
         </div>
       </div>
 
@@ -173,34 +128,12 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
         onLetterInclude={handleLetterInclude}
       />
 
-      <div className="flex gap-3 justify-center flex-wrap">
-        <Button 
-          onClick={handleAnalyze}
-          disabled={analyzing || !guessData.some(tile => tile.letter.trim() !== '')}
-          className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 font-medium transition-all duration-200 shadow-md hover:shadow-lg"
-        >
-          {analyzing ? (
-            <>
-              <Brain className="mr-2 h-4 w-4 animate-pulse" />
-              Real AI Analyzing...
-            </>
-          ) : (
-            <>
-              <Brain className="mr-2 h-4 w-4" />
-              Real AI Predict
-            </>
-          )}
-        </Button>
-        
-        <Button 
-          onClick={clearBoard}
-          variant="outline"
-          className="px-6 py-2 font-medium hover:bg-slate-50"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Clear
-        </Button>
-      </div>
+      <AnalysisControls
+        onAnalyze={handleAnalyze}
+        onClear={clearBoard}
+        analyzing={analyzing}
+        hasValidInput={hasValidInput}
+      />
     </div>
   );
 };
