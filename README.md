@@ -3,7 +3,7 @@
 
 An advanced AI-powered Wordle solver that combines machine learning, constraint analysis, and dynamic word corpus generation to provide intelligent word suggestions and real-time game analysis.
 
-![Wordly AI Oracle Demo](https://via.placeholder.com/800x400/2563eb/ffffff?text=Wordly+AI+Oracle+Demo)
+![Wordly AI Oracle Demo][https://wordly-ai-oracle.lovable.app/](https://wordly-ai-oracle.lovable.app/)
 
 ## 🚀 Features
 
@@ -243,10 +243,9 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPLv
 
 ## 🔗 Links
 
-- **Live Demo**: [https://wordly-ai-oracle.vercel.app](https://wordly-ai-oracle.vercel.app)
-- **Documentation**: [https://docs.wordly-ai-oracle.dev](https://docs.wordly-ai-oracle.dev)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/wordly-ai-oracle/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/wordly-ai-oracle/discussions)
+- **Live Demo**: [https://wordly-ai-oracle.lovable.app](https://wordly-ai-oracle.lovable.app/)
+- **Issues**: [GitHub Issues](https://github.com/codingnooob/wordly-ai-oracle/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/codingnooob/wordly-ai-oracle/discussions)
 
 ## 🙏 Acknowledgments
 
