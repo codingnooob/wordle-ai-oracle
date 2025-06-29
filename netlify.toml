@@ -8,6 +8,12 @@
   NPM_FLAGS = "--prefer-offline --no-audit"
 
 [[redirects]]
+  from = "http://wordle-ai-oracle.netlify.app/*"
+  to = "https://wordle-ai-oracle.netlify.app/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
@@ -28,6 +34,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.supabase.co https://supabase.co wss://realtime.supabase.co;"
 
 [[headers]]

@@ -16,6 +16,20 @@
       "dest": "/index.html"
     }
   ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://wordle-ai-oracle.vercel.app/$1",
+      "permanent": true,
+      "has": [
+        {
+          "type": "header",
+          "key": "x-forwarded-proto",
+          "value": "http"
+        }
+      ]
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   },
@@ -43,6 +57,10 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains; preload"
         }
       ]
     },
