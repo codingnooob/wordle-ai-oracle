@@ -28,6 +28,19 @@ const ApiOverview = ({ baseUrl }: ApiOverviewProps) => {
         </div>
 
         <div>
+          <h3 className="text-lg font-semibold mb-2">Input Requirements</h3>
+          <div className="bg-blue-50 border border-blue-200 p-3 rounded space-y-1">
+            <p className="font-medium text-blue-800">⚠️ Strict Validation Applied:</p>
+            <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
+              <li>All letters must have complete analysis (no <code>unknown</code> states)</li>
+              <li>Only <code>correct</code>, <code>present</code>, and <code>absent</code> states accepted</li>
+              <li>Guess data length must exactly match specified word length</li>
+              <li>Requests with incomplete analysis will be rejected with 400 error</li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
           <h3 className="text-lg font-semibold mb-2">Rate Limits</h3>
           <p className="text-slate-600">100 requests per hour per API key/IP address</p>
         </div>

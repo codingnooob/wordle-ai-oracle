@@ -42,6 +42,12 @@ The Wordly AI Oracle provides a powerful REST API for integrating Wordle solving
 #### POST /wordle-solver
 Analyze Wordle guesses and get AI-powered word predictions.
 
+**⚠️ Validation Requirements:**
+- All letters must have a known state: `correct`, `present`, or `absent`
+- No `unknown` states are allowed - complete your analysis before API submission
+- The `guessData` length must exactly match `wordLength`
+- Requests with incomplete analysis will return 400 error responses
+
 **Request Body:**
 ```json
 {
@@ -50,7 +56,7 @@ Analyze Wordle guesses and get AI-powered word predictions.
     { "letter": "O", "state": "present" },
     { "letter": "U", "state": "absent" },
     { "letter": "S", "state": "correct" },
-    { "letter": "E", "state": "unknown" }
+    { "letter": "E", "state": "absent" }
   ],
   "wordLength": 5,
   "excludedLetters": ["B", "C", "D"],
@@ -58,7 +64,7 @@ Analyze Wordle guesses and get AI-powered word predictions.
 }
 ```
 
-**Response:**
+**Success Response:**
 ```json
 {
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -69,6 +75,13 @@ Analyze Wordle guesses and get AI-powered word predictions.
   ],
   "confidence_score": 0.95,
   "processing_status": "complete"
+}
+```
+
+**Error Response (Validation Failure):**
+```json
+{
+  "error": "Tile at position 4 has invalid state 'unknown'. Only 'correct', 'present', and 'absent' are allowed. All tiles must have a known state"
 }
 ```
 
@@ -89,14 +102,20 @@ const response = await fetch('https://wordlesolver.ai/api/wordle-solver', {
     guessData: [
       { letter: 'H', state: 'correct' },
       { letter: 'O', state: 'present' },
-      { letter: 'U', state: 'absent' }
+      { letter: 'U', state: 'absent' },
+      { letter: 'S', state: 'correct' },
+      { letter: 'E', state: 'absent' }
     ],
     wordLength: 5
   })
 });
 
 const result = await response.json();
-console.log('Solutions:', result.solutions);
+if (response.ok) {
+  console.log('Solutions:', result.solutions);
+} else {
+  console.error('API Error:', result.error);
+}
 ```
 
 **Python:**
@@ -107,13 +126,19 @@ response = requests.post('https://wordlesolver.ai/api/wordle-solver', json={
     'guessData': [
         {'letter': 'H', 'state': 'correct'},
         {'letter': 'O', 'state': 'present'},
-        {'letter': 'U', 'state': 'absent'}
+        {'letter': 'U', 'state': 'absent'},
+        {'letter': 'S', 'state': 'correct'},
+        {'letter': 'E', 'state': 'absent'}
     ],
     'wordLength': 5
 })
 
-result = response.json()
-print('Solutions:', result['solutions'])
+if response.status_code == 200:
+    result = response.json()
+    print('Solutions:', result['solutions'])
+else:
+    error_result = response.json()
+    print('API Error:', error_result['error'])
 ```
 
 **cURL:**
@@ -123,7 +148,10 @@ curl -X POST 'https://wordlesolver.ai/api/wordle-solver' \
   -d '{
     "guessData": [
       {"letter": "H", "state": "correct"},
-      {"letter": "O", "state": "present"}
+      {"letter": "O", "state": "present"},
+      {"letter": "U", "state": "absent"},
+      {"letter": "S", "state": "correct"},
+      {"letter": "E", "state": "absent"}
     ],
     "wordLength": 5
   }'
@@ -133,8 +161,9 @@ curl -X POST 'https://wordlesolver.ai/api/wordle-solver' \
 - **Rate Limiting**: 100 requests per hour per API key/IP
 - **Async Processing**: Long-running analyses return job IDs for status checking
 - **Multiple Response Modes**: Immediate results (< 10s) or async processing
-- **Letter States**: Support for correct, present, absent, and unknown letter states
+- **Letter States**: Support for correct, present, and absent letter states only
 - **Word Length Support**: Configurable word lengths from 3-15 letters
+- **Strict Validation**: Complete guess analysis required before submission
 
 ### API Documentation
 For complete API documentation with interactive examples, visit: [https://wordlesolver.ai/api-docs](https://wordlesolver.ai/api-docs)

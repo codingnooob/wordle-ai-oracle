@@ -14,7 +14,7 @@ const corsHeaders = {
 };
 
 interface WordleAPIRequest {
-  guessData: Array<{letter: string, state: 'correct' | 'present' | 'absent' | 'unknown'}>;
+  guessData: Array<{letter: string, state: 'correct' | 'present' | 'absent'}>;
   wordLength: number;
   excludedLetters?: string[];
   apiKey?: string;
@@ -23,6 +23,46 @@ interface WordleAPIRequest {
 interface WordleSolution {
   word: string;
   probability: number;
+}
+
+// Validate request input strictly
+function validateWordleRequest(request: WordleAPIRequest): {valid: boolean, error?: string} {
+  // Check if guessData exists and is array
+  if (!Array.isArray(request.guessData)) {
+    return { valid: false, error: 'guessData must be an array' };
+  }
+  
+  // Check wordLength
+  if (!request.wordLength || request.wordLength < 3 || request.wordLength > 15) {
+    return { valid: false, error: 'wordLength must be between 3 and 15' };
+  }
+  
+  // Check if guessData length matches wordLength
+  if (request.guessData.length !== request.wordLength) {
+    return { valid: false, error: `guessData length (${request.guessData.length}) must match wordLength (${request.wordLength})` };
+  }
+  
+  // Validate each tile in guessData
+  for (let i = 0; i < request.guessData.length; i++) {
+    const tile = request.guessData[i];
+    
+    // Check if tile has required properties
+    if (!tile.letter || !tile.state) {
+      return { valid: false, error: `Tile at position ${i} is missing letter or state` };
+    }
+    
+    // Check if letter is valid (single alphabetic character)
+    if (typeof tile.letter !== 'string' || tile.letter.length !== 1 || !/^[A-Za-z]$/.test(tile.letter)) {
+      return { valid: false, error: `Tile at position ${i} has invalid letter. Must be a single alphabetic character` };
+    }
+    
+    // Check if state is valid (only correct, present, or absent allowed)
+    if (!['correct', 'present', 'absent'].includes(tile.state)) {
+      return { valid: false, error: `Tile at position ${i} has invalid state '${tile.state}'. Only 'correct', 'present', and 'absent' are allowed. All tiles must have a known state` };
+    }
+  }
+  
+  return { valid: true };
 }
 
 // Rate limiting and API key validation
@@ -162,9 +202,20 @@ serve(async (req) => {
   // Handle main API endpoint
   if (req.method === 'POST') {
     try {
-      const { guessData, wordLength, excludedLetters, apiKey }: WordleAPIRequest = await req.json();
+      const requestBody: WordleAPIRequest = await req.json();
       
-      // Validate request
+      // Validate input format first
+      const inputValidation = validateWordleRequest(requestBody);
+      if (!inputValidation.valid) {
+        return new Response(JSON.stringify({ error: inputValidation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      const { guessData, wordLength, excludedLetters, apiKey } = requestBody;
+      
+      // Validate request and rate limiting
       const clientId = req.headers.get('x-forwarded-for') || 'unknown';
       const validation = await validateRequest(apiKey, clientId);
       if (!validation.valid) {
@@ -177,18 +228,10 @@ serve(async (req) => {
       // Track usage
       await trackUsage(apiKey);
       
-      // Validate input
-      if (!Array.isArray(guessData) || !wordLength || wordLength < 3 || wordLength > 15) {
-        return new Response(JSON.stringify({ error: 'Invalid input format' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      // Sanitize guess data
+      // Sanitize guess data (normalize letters to uppercase)
       const sanitizedGuessData = guessData.map(tile => ({
-        letter: (tile.letter || '').toUpperCase().replace(/[^A-Z]/g, '').substring(0, 1),
-        state: ['correct', 'present', 'absent', 'unknown'].includes(tile.state) ? tile.state : 'unknown'
+        letter: tile.letter.toUpperCase(),
+        state: tile.state
       }));
       
       // Create job record
@@ -300,8 +343,8 @@ serve(async (req) => {
       
     } catch (error) {
       console.error('API Error:', error);
-      return new Response(JSON.stringify({ error: 'Internal server error' }), {
-        status: 500,
+      return new Response(JSON.stringify({ error: 'Invalid JSON format or internal server error' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
