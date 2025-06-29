@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ApiDocumentation = () => {
-  const baseUrl = "https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1";
+  // Dynamic base URL that uses the current domain
+  const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'https://wordlesolver.ai/api';
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -66,7 +67,7 @@ const ApiDocumentation = () => {
         <TabsContent value="analyze">
           <Card>
             <CardHeader>
-              <CardTitle>POST /wordle-solver-api</CardTitle>
+              <CardTitle>POST /wordle-solver</CardTitle>
               <CardDescription>Analyze a Wordle guess and get word predictions</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -124,7 +125,7 @@ const ApiDocumentation = () => {
   "status": "processing",
   "message": "Analysis started, check status using the job_id",
   "estimated_completion_seconds": 15,
-  "status_url": "${baseUrl}/wordle-solver-api/status/123e..."
+  "status_url": "${baseUrl}/wordle-solver/status/123e..."
 }`}
                 </pre>
               </div>
@@ -135,7 +136,7 @@ const ApiDocumentation = () => {
         <TabsContent value="status">
           <Card>
             <CardHeader>
-              <CardTitle>GET /wordle-solver-api/status/{`{job_id}`}</CardTitle>
+              <CardTitle>GET /wordle-solver/status/{`{job_id}`}</CardTitle>
               <CardDescription>Check the status of an async analysis job</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -189,7 +190,7 @@ const ApiDocumentation = () => {
                 <h3 className="text-lg font-semibold mb-2">JavaScript/Node.js</h3>
                 <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
 {`// Analyze a Wordle guess
-const response = await fetch('${baseUrl}/wordle-solver-api', {
+const response = await fetch('${baseUrl}/wordle-solver', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -214,7 +215,7 @@ if (result.status === 'complete') {
   console.log('Solutions:', result.solutions);
 } else if (result.status === 'processing') {
   // Check status later
-  const statusResponse = await fetch(\`${baseUrl}/wordle-solver-api/status/\${result.job_id}\`);
+  const statusResponse = await fetch(\`${baseUrl}/wordle-solver/status/\${result.job_id}\`);
   const statusResult = await statusResponse.json();
   console.log('Status:', statusResult.status);
 }`}
@@ -228,7 +229,7 @@ if (result.status === 'complete') {
 import time
 
 # Analyze a Wordle guess
-url = '${baseUrl}/wordle-solver-api'
+url = '${baseUrl}/wordle-solver'
 data = {
     'guessData': [
         {'letter': 'H', 'state': 'correct'},
@@ -250,7 +251,7 @@ elif result['status'] == 'processing':
     # Poll for completion
     job_id = result['job_id']
     while True:
-        status_response = requests.get(f'{url}/status/{job_id}')
+        status_response = requests.get(f'{baseUrl}/wordle-solver/status/{job_id}')
         status_result = status_response.json()
         
         if status_result['status'] in ['complete', 'failed', 'partial']:
@@ -265,7 +266,7 @@ elif result['status'] == 'processing':
                 <h3 className="text-lg font-semibold mb-2">cURL</h3>
                 <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
 {`# Analyze a Wordle guess
-curl -X POST '${baseUrl}/wordle-solver-api' \\
+curl -X POST '${baseUrl}/wordle-solver' \\
   -H 'Content-Type: application/json' \\
   -H 'X-API-Key: your-api-key' \\
   -d '{
@@ -281,7 +282,7 @@ curl -X POST '${baseUrl}/wordle-solver-api' \\
   }'
 
 # Check status of async job
-curl '${baseUrl}/wordle-solver-api/status/123e4567-e89b-12d3-a456-426614174000'`}
+curl '${baseUrl}/wordle-solver/status/123e4567-e89b-12d3-a456-426614174000'`}
                 </pre>
               </div>
             </CardContent>
