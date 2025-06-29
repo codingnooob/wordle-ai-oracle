@@ -31,6 +31,114 @@ An advanced AI-powered Wordle solver that combines machine learning, constraint 
 - **Word Length Support**: Configurable word lengths (3-15 letters)
 - **Keyboard Integration**: Interactive virtual keyboard with constraint visualization
 
+## 🔌 API Access
+
+### REST API Endpoints
+
+The Wordly AI Oracle provides a powerful REST API for integrating Wordle solving capabilities into your applications.
+
+**Base URL**: `https://wordlesolver.ai/api`
+
+#### POST /wordle-solver
+Analyze Wordle guesses and get AI-powered word predictions.
+
+**Request Body:**
+```json
+{
+  "guessData": [
+    { "letter": "H", "state": "correct" },
+    { "letter": "O", "state": "present" },
+    { "letter": "U", "state": "absent" },
+    { "letter": "S", "state": "correct" },
+    { "letter": "E", "state": "unknown" }
+  ],
+  "wordLength": 5,
+  "excludedLetters": ["B", "C", "D"],
+  "apiKey": "optional-api-key"
+}
+```
+
+**Response:**
+```json
+{
+  "job_id": "123e4567-e89b-12d3-a456-426614174000",
+  "status": "complete",
+  "solutions": [
+    { "word": "HOUSE", "probability": 85.2 },
+    { "word": "HORSE", "probability": 78.9 }
+  ],
+  "confidence_score": 0.95,
+  "processing_status": "complete"
+}
+```
+
+#### GET /wordle-solver/status/{job_id}
+Check the status of async analysis jobs.
+
+### Code Examples
+
+**JavaScript/Node.js:**
+```javascript
+const response = await fetch('https://wordlesolver.ai/api/wordle-solver', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key' // optional
+  },
+  body: JSON.stringify({
+    guessData: [
+      { letter: 'H', state: 'correct' },
+      { letter: 'O', state: 'present' },
+      { letter: 'U', state: 'absent' }
+    ],
+    wordLength: 5
+  })
+});
+
+const result = await response.json();
+console.log('Solutions:', result.solutions);
+```
+
+**Python:**
+```python
+import requests
+
+response = requests.post('https://wordlesolver.ai/api/wordle-solver', json={
+    'guessData': [
+        {'letter': 'H', 'state': 'correct'},
+        {'letter': 'O', 'state': 'present'},
+        {'letter': 'U', 'state': 'absent'}
+    ],
+    'wordLength': 5
+})
+
+result = response.json()
+print('Solutions:', result['solutions'])
+```
+
+**cURL:**
+```bash
+curl -X POST 'https://wordlesolver.ai/api/wordle-solver' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "guessData": [
+      {"letter": "H", "state": "correct"},
+      {"letter": "O", "state": "present"}
+    ],
+    "wordLength": 5
+  }'
+```
+
+### API Features
+- **Rate Limiting**: 100 requests per hour per API key/IP
+- **Async Processing**: Long-running analyses return job IDs for status checking
+- **Multiple Response Modes**: Immediate results (< 10s) or async processing
+- **Letter States**: Support for correct, present, absent, and unknown letter states
+- **Word Length Support**: Configurable word lengths from 3-15 letters
+
+### API Documentation
+For complete API documentation with interactive examples, visit: [https://wordlesolver.ai/api-docs](https://wordlesolver.ai/api-docs)
+
 ## 🛠️ Technology Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS
@@ -244,6 +352,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPLv
 ## 🔗 Links
 
 - **Live Demo**: [https://wordly-ai-oracle.lovable.app](https://wordly-ai-oracle.lovable.app/)
+- **API Documentation**: [https://wordlesolver.ai/api-docs](https://wordlesolver.ai/api-docs)
 - **Issues**: [GitHub Issues](https://github.com/codingnooob/wordly-ai-oracle/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/codingnooob/wordly-ai-oracle/discussions)
 

@@ -6,8 +6,23 @@ import ApiStatusEndpoint from './api-docs/ApiStatusEndpoint';
 import ApiExamples from './api-docs/ApiExamples';
 
 const ApiDocumentation = () => {
-  // Dynamic base URL that uses the current domain
-  const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'https://wordlesolver.ai/api';
+  // Prioritize production domain, fallback to current origin for development
+  const getBaseUrl = () => {
+    if (typeof window === 'undefined') return 'https://wordlesolver.ai/api';
+    
+    const currentOrigin = window.location.origin;
+    
+    // If we're on the production domain or any custom domain (not localhost or lovable project)
+    if (currentOrigin.includes('wordlesolver.ai') || 
+        (!currentOrigin.includes('localhost') && !currentOrigin.includes('lovableproject.com'))) {
+      return 'https://wordlesolver.ai/api';
+    }
+    
+    // For development environments (localhost, lovable project URLs)
+    return `${currentOrigin}/api`;
+  };
+
+  const baseUrl = getBaseUrl();
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
