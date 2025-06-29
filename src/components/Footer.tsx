@@ -15,7 +15,7 @@ const Footer = () => {
       }}>
         <div className="flex flex-col sm:flex-row items-center justify-center text-slate-600" style={{ gap: 'clamp(1rem, 3vw, 1.5rem)' }}>
           <a 
-            href="https://github.com/codingnooob/wordly-ai-oracle" 
+            href="https://github.com/codingnooob/wordle-ai-oracle" 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex items-center hover:text-slate-800 transition-colors" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}

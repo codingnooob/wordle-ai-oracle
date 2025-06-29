@@ -1,15 +1,15 @@
 
-# Contributing to Wordly AI Oracle
+# Contributing to Wordle AI Oracle
 
-Thank you for your interest in contributing to Wordly AI Oracle! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Wordle AI Oracle! This document provides guidelines and information for contributors.
 
 ## 🚀 Quick Start
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/yourusername/wordly-ai-oracle.git
-   cd wordly-ai-oracle
+   git clone https://github.com/yourusername/wordle-ai-oracle.git
+   cd wordle-ai-oracle
    ```
 3. **Install dependencies**:
    ```bash
@@ -298,4 +298,4 @@ Contributors are recognized in:
 - **Release notes**: Feature contributors mentioned
 - **GitHub**: Contributor graph and statistics
 
-Thank you for contributing to Wordly AI Oracle! Your efforts help make this project better for everyone. 🚀
+Thank you for contributing to Wordle AI Oracle! Your efforts help make this project better for everyone. 🚀

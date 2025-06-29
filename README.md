@@ -1,9 +1,9 @@
 
-# Wordly AI Oracle 🎯
+# Wordle AI Oracle 🎯
 
 An advanced AI-powered Wordle solver that combines machine learning, constraint analysis, and dynamic word corpus generation to provide intelligent word suggestions and real-time game analysis.
 
-![Wordly AI Oracle Demo][https://wordly-ai-oracle.lovable.app/](https://wordly-ai-oracle.lovable.app/)
+![Wordle AI Oracle Demo][https://wordle-ai-oracle.lovable.app/](https://wordle-ai-oracle.lovable.app/)
 
 ## 🚀 Features
 
@@ -35,7 +35,7 @@ An advanced AI-powered Wordle solver that combines machine learning, constraint 
 
 ### REST API Endpoints
 
-The Wordly AI Oracle provides a powerful REST API for integrating Wordle solving capabilities into your applications.
+The Wordle AI Oracle provides a powerful REST API for integrating Wordle solving capabilities into your applications.
 
 **Base URL**: `https://wordlesolver.ai/api`
 
@@ -210,8 +210,8 @@ For complete API documentation with interactive examples, visit: [https://wordle
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/wordly-ai-oracle.git
-cd wordly-ai-oracle
+git clone https://github.com/yourusername/wordle-ai-oracle.git
+cd wordle-ai-oracle
 ```
 
 2. **Install dependencies**
@@ -385,10 +385,10 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPLv
 
 ## 🔗 Links
 
-- **Live Demo**: [https://wordly-ai-oracle.lovable.app](https://wordly-ai-oracle.lovable.app/)
+- **Live Demo**: [https://wordle-ai-oracle.lovable.app](https://wordle-ai-oracle.lovable.app/)
 - **API Documentation**: [https://wordlesolver.ai/api-docs](https://wordlesolver.ai/api-docs)
-- **Issues**: [GitHub Issues](https://github.com/codingnooob/wordly-ai-oracle/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/codingnooob/wordly-ai-oracle/discussions)
+- **Issues**: [GitHub Issues](https://github.com/codingnooob/wordle-ai-oracle/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/codingnooob/wordle-ai-oracle/discussions)
 
 ## 🙏 Acknowledgments
 

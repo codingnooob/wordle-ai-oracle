@@ -12,7 +12,7 @@ const ApiOverview = ({ baseUrl }: ApiOverviewProps) => {
       <CardHeader>
         <CardTitle>API Overview</CardTitle>
         <CardDescription>
-          The Wordly AI Oracle API provides ML-powered Wordle puzzle solving capabilities
+          The Wordle AI Oracle API provides ML-powered Wordle puzzle solving capabilities
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
