@@ -59,12 +59,12 @@ Analyze Wordle guesses and get AI-powered word predictions.
     { "letter": "E", "state": "correct" }
   ],
   "wordLength": 5,
-  "excludedLetters": ["T", "I", "O"],
+  "excludedLetters": ["T", "I", "S"],
   "apiKey": "optional-api-key"
 }
 ```
 
-**Success Response:**
+**Success Response:** *(Example response - actual results may vary based on ML analysis)*
 ```json
 {
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -106,14 +106,15 @@ const response = await fetch('https://wordlesolver.ai/api/wordle-solver', {
       { letter: 'N', state: 'absent' },
       { letter: 'E', state: 'correct' }
     ],
-    wordLength: 5
+    wordLength: 5,
+    excludedLetters: ['T', 'I', 'S']
   })
 });
 
 const result = await response.json();
 if (response.ok) {
   console.log('Solutions:', result.solutions);
-  // Expected: [{ word: "AROSE", probability: 85.2 }, { word: "ARGUE", probability: 78.9 }]
+  // Expected (actual results may vary): [{ word: "AROSE", probability: 85.2 }, { word: "ARGUE", probability: 78.9 }]
 } else {
   console.error('API Error:', result.error);
 }
@@ -131,13 +132,14 @@ response = requests.post('https://wordlesolver.ai/api/wordle-solver', json={
         {'letter': 'N', 'state': 'absent'},
         {'letter': 'E', 'state': 'correct'}
     ],
-    'wordLength': 5
+    'wordLength': 5,
+    'excludedLetters': ['T', 'I', 'S']
 })
 
 if response.status_code == 200:
     result = response.json()
     print('Solutions:', result['solutions'])
-    # Expected: [{'word': 'AROSE', 'probability': 85.2}, {'word': 'ARGUE', 'probability': 78.9}]
+    # Expected (actual results may vary): [{'word': 'AROSE', 'probability': 85.2}, {'word': 'ARGUE', 'probability': 78.9}]
 else:
     error_result = response.json()
     print('API Error:', error_result['error'])
@@ -155,7 +157,8 @@ curl -X POST 'https://wordlesolver.ai/api/wordle-solver' \
       {"letter": "N", "state": "absent"},
       {"letter": "E", "state": "correct"}
     ],
-    "wordLength": 5
+    "wordLength": 5,
+    "excludedLetters": ["T", "I", "S"]
   }'
 ```
 

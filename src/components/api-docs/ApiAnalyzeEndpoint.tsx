@@ -41,7 +41,7 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
     { "letter": "E", "state": "correct" }
   ],
   "wordLength": 5,
-  "excludedLetters": ["T", "I", "O"],
+  "excludedLetters": ["T", "I", "S"],
   "apiKey": "optional-api-key"
 }`}
             </pre>
@@ -61,6 +61,7 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Success Response (Immediate)</h3>
+          <p className="text-sm text-slate-600 mb-2">*(Example response - actual results may vary based on ML analysis)*</p>
           <ScrollArea className="w-full rounded border h-48">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{
@@ -82,6 +83,7 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Success Response (Async)</h3>
+          <p className="text-sm text-slate-600 mb-2">*(Example response - actual results may vary)*</p>
           <ScrollArea className="w-full rounded border h-48">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{

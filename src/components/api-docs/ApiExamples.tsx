@@ -34,7 +34,7 @@ const response = await fetch('${baseUrl}/wordle-solver', {
       { letter: 'E', state: 'correct' }
     ],
     wordLength: 5,
-    excludedLetters: ['T', 'I', 'O']
+    excludedLetters: ['T', 'I', 'S']
   })
 });
 
@@ -43,7 +43,8 @@ const result = await response.json();
 if (response.ok) {
   if (result.status === 'complete') {
     console.log('Solutions:', result.solutions);
-    // Example output: [
+    // Example output (actual results may vary):
+    // [
     //   { word: "AROSE", probability: 85.2 },
     //   { word: "ARGUE", probability: 78.9 }
     // ]
@@ -79,7 +80,7 @@ data = {
         {'letter': 'E', 'state': 'correct'}
     ],
     'wordLength': 5,
-    'excludedLetters': ['T', 'I', 'O']
+    'excludedLetters': ['T', 'I', 'S']
 }
 
 response = requests.post(url, json=data)
@@ -89,7 +90,8 @@ if response.status_code == 200:
     
     if result['status'] == 'complete':
         print('Solutions:', result['solutions'])
-        # Example output: [
+        # Example output (actual results may vary):
+        # [
         #   {'word': 'AROSE', 'probability': 85.2},
         #   {'word': 'ARGUE', 'probability': 78.9}
         # ]
@@ -130,10 +132,10 @@ curl -X POST '${baseUrl}/wordle-solver' \\
       {"letter": "E", "state": "correct"}
     ],
     "wordLength": 5,
-    "excludedLetters": ["T", "I", "O"]
+    "excludedLetters": ["T", "I", "S"]
   }'
 
-# Example successful response:
+# Example successful response (actual results may vary):
 # {
 #   "job_id": "123e4567-e89b-12d3-a456-426614174000",
 #   "status": "complete",
