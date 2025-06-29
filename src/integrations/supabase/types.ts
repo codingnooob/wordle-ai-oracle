@@ -9,7 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      analysis_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          estimated_completion_seconds: number | null
+          id: string
+          input_data: Json
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string
+          input_data: Json
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string
+          input_data?: Json
+          status?: string
+        }
+        Relationships: []
+      }
+      analysis_results: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          job_id: string
+          processing_status: string | null
+          solutions: Json
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          job_id: string
+          processing_status?: string | null
+          solutions: Json
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          processing_status?: string | null
+          solutions?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_usage: {
+        Row: {
+          api_key_hash: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          last_request: string
+          request_count: number | null
+        }
+        Insert: {
+          api_key_hash?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_request?: string
+          request_count?: number | null
+        }
+        Update: {
+          api_key_hash?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_request?: string
+          request_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
