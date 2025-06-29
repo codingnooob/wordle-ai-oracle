@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface ApiExamplesProps {
   baseUrl: string;
@@ -16,8 +16,8 @@ const ApiExamples = ({ baseUrl }: ApiExamplesProps) => {
       <CardContent className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold mb-2">JavaScript/Node.js</h3>
-          <ScrollArea className="w-full rounded border">
-            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
+          <ScrollArea className="w-full rounded border h-96">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`// Analyze a completed Wordle guess
 const response = await fetch('${baseUrl}/wordle-solver', {
   method: 'POST',
@@ -53,13 +53,14 @@ if (response.ok) {
   console.error('API Error:', result.error);
 }`}
             </pre>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Python</h3>
-          <ScrollArea className="w-full rounded border">
-            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
+          <ScrollArea className="w-full rounded border h-96">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`import requests
 import time
 
@@ -100,13 +101,14 @@ else:
     error_result = response.json()
     print('API Error:', error_result['error'])`}
             </pre>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
 
         <div>
           <h3 className="text-lg font-semibold mb-2">cURL</h3>
-          <ScrollArea className="w-full rounded border">
-            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
+          <ScrollArea className="w-full rounded border h-80">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`# Analyze a completed Wordle guess
 curl -X POST '${baseUrl}/wordle-solver' \\
   -H 'Content-Type: application/json' \\
@@ -137,6 +139,7 @@ curl -X POST '${baseUrl}/wordle-solver' \\
   }'
 # Returns: {"error": "Tile at position 0 has invalid state 'unknown'. Only 'correct', 'present', and 'absent' are allowed. All tiles must have a known state"}`}
             </pre>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
       </CardContent>
