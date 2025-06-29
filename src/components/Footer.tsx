@@ -1,5 +1,5 @@
 
-import { Github, Heart, Code } from 'lucide-react';
+import { Github, Heart } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -22,14 +22,6 @@ const Footer = () => {
           >
             <Github style={{ width: 'clamp(16px, 3vw, 20px)', height: 'clamp(16px, 3vw, 20px)' }} />
             <span style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>Source Code</span>
-          </a>
-          
-          <a 
-            href="/api-docs"
-            className="flex items-center hover:text-slate-800 transition-colors" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}
-          >
-            <Code style={{ width: 'clamp(16px, 3vw, 20px)', height: 'clamp(16px, 3vw, 20px)' }} />
-            <span style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>API Documentation</span>
           </a>
           
           <div className="flex items-center" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}>
