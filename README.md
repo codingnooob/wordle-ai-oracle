@@ -74,7 +74,7 @@ See the [API Guide](docs/API_GUIDE.md) for complete documentation.
 
 ## 🌟 Live Demo
 
-**Try it now**: [https://wordle-ai-oracle.lovable.app](https://wordle-ai-oracle.lovable.app/)
+**Try it now**: [https://wordly-ai-oracle.lovable.app](https://wordly-ai-oracle.lovable.app/)
 
 ## 🤝 Contributing
 
@@ -91,7 +91,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPLv
 
 ## 🔗 Links
 
-- **Live Demo**: [https://wordle-ai-oracle.lovable.app](https://wordle-ai-oracle.lovable.app/)
+- **Live Demo**: [https://wordly-ai-oracle.lovable.app](https://wordly-ai-oracle.lovable.app/)
 - **API Documentation**: [https://wordlesolver.ai/api-docs](https://wordlesolver.ai/api-docs)
 - **Issues**: [GitHub Issues](https://github.com/codingnooob/wordle-ai-oracle/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/codingnooob/wordle-ai-oracle/discussions)
