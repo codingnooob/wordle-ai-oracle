@@ -34,14 +34,14 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{
   "guessData": [
-    { "letter": "H", "state": "correct" },
-    { "letter": "O", "state": "present" },
-    { "letter": "U", "state": "absent" },
-    { "letter": "S", "state": "correct" },
-    { "letter": "E", "state": "absent" }
+    { "letter": "C", "state": "absent" },
+    { "letter": "R", "state": "present" },
+    { "letter": "A", "state": "present" },
+    { "letter": "N", "state": "absent" },
+    { "letter": "E", "state": "correct" }
   ],
   "wordLength": 5,
-  "excludedLetters": ["B", "C", "D"],
+  "excludedLetters": ["T", "I", "O"],
   "apiKey": "optional-api-key"
 }`}
             </pre>
@@ -67,9 +67,9 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
   "status": "complete",
   "solutions": [
-    { "word": "HOUSE", "probability": 85.2 },
-    { "word": "HORSE", "probability": 78.9 },
-    { "word": "HASTE", "probability": 65.4 }
+    { "word": "AROSE", "probability": 85.2 },
+    { "word": "ARGUE", "probability": 78.9 },
+    { "word": "LARGE", "probability": 65.4 }
   ],
   "confidence_score": 0.95,
   "processing_status": "complete",

@@ -27,14 +27,14 @@ const response = await fetch('${baseUrl}/wordle-solver', {
   },
   body: JSON.stringify({
     guessData: [
-      { letter: 'H', state: 'correct' },
-      { letter: 'O', state: 'present' },
-      { letter: 'U', state: 'absent' },
-      { letter: 'S', state: 'correct' },
-      { letter: 'E', state: 'absent' }
+      { letter: 'C', state: 'absent' },
+      { letter: 'R', state: 'present' },
+      { letter: 'A', state: 'present' },
+      { letter: 'N', state: 'absent' },
+      { letter: 'E', state: 'correct' }
     ],
     wordLength: 5,
-    excludedLetters: ['B', 'C', 'D']
+    excludedLetters: ['T', 'I', 'O']
   })
 });
 
@@ -43,6 +43,10 @@ const result = await response.json();
 if (response.ok) {
   if (result.status === 'complete') {
     console.log('Solutions:', result.solutions);
+    // Example output: [
+    //   { word: "AROSE", probability: 85.2 },
+    //   { word: "ARGUE", probability: 78.9 }
+    // ]
   } else if (result.status === 'processing') {
     // Check status later
     const statusResponse = await fetch(\`${baseUrl}/wordle-solver/status/\${result.job_id}\`);
@@ -68,14 +72,14 @@ import time
 url = '${baseUrl}/wordle-solver'
 data = {
     'guessData': [
-        {'letter': 'H', 'state': 'correct'},
-        {'letter': 'O', 'state': 'present'},
-        {'letter': 'U', 'state': 'absent'},
-        {'letter': 'S', 'state': 'correct'},
-        {'letter': 'E', 'state': 'absent'}
+        {'letter': 'C', 'state': 'absent'},
+        {'letter': 'R', 'state': 'present'},
+        {'letter': 'A', 'state': 'present'},
+        {'letter': 'N', 'state': 'absent'},
+        {'letter': 'E', 'state': 'correct'}
     ],
     'wordLength': 5,
-    'excludedLetters': ['B', 'C', 'D']
+    'excludedLetters': ['T', 'I', 'O']
 }
 
 response = requests.post(url, json=data)
@@ -85,6 +89,10 @@ if response.status_code == 200:
     
     if result['status'] == 'complete':
         print('Solutions:', result['solutions'])
+        # Example output: [
+        #   {'word': 'AROSE', 'probability': 85.2},
+        #   {'word': 'ARGUE', 'probability': 78.9}
+        # ]
     elif result['status'] == 'processing':
         # Poll for completion
         job_id = result['job_id']
@@ -115,15 +123,25 @@ curl -X POST '${baseUrl}/wordle-solver' \\
   -H 'X-API-Key: your-api-key' \\
   -d '{
     "guessData": [
-      {"letter": "H", "state": "correct"},
-      {"letter": "O", "state": "present"},
-      {"letter": "U", "state": "absent"},
-      {"letter": "S", "state": "correct"},
-      {"letter": "E", "state": "absent"}
+      {"letter": "C", "state": "absent"},
+      {"letter": "R", "state": "present"},
+      {"letter": "A", "state": "present"},
+      {"letter": "N", "state": "absent"},
+      {"letter": "E", "state": "correct"}
     ],
     "wordLength": 5,
-    "excludedLetters": ["B", "C", "D"]
+    "excludedLetters": ["T", "I", "O"]
   }'
+
+# Example successful response:
+# {
+#   "job_id": "123e4567-e89b-12d3-a456-426614174000",
+#   "status": "complete",
+#   "solutions": [
+#     {"word": "AROSE", "probability": 85.2},
+#     {"word": "ARGUE", "probability": 78.9}
+#   ]
+# }
 
 # Check status of async job
 curl '${baseUrl}/wordle-solver/status/123e4567-e89b-12d3-a456-426614174000'
@@ -133,7 +151,7 @@ curl -X POST '${baseUrl}/wordle-solver' \\
   -H 'Content-Type: application/json' \\
   -d '{
     "guessData": [
-      {"letter": "H", "state": "unknown"}
+      {"letter": "C", "state": "unknown"}
     ],
     "wordLength": 5
   }'

@@ -52,14 +52,14 @@ Analyze Wordle guesses and get AI-powered word predictions.
 ```json
 {
   "guessData": [
-    { "letter": "H", "state": "correct" },
-    { "letter": "O", "state": "present" },
-    { "letter": "U", "state": "absent" },
-    { "letter": "S", "state": "correct" },
-    { "letter": "E", "state": "absent" }
+    { "letter": "C", "state": "absent" },
+    { "letter": "R", "state": "present" },
+    { "letter": "A", "state": "present" },
+    { "letter": "N", "state": "absent" },
+    { "letter": "E", "state": "correct" }
   ],
   "wordLength": 5,
-  "excludedLetters": ["B", "C", "D"],
+  "excludedLetters": ["T", "I", "O"],
   "apiKey": "optional-api-key"
 }
 ```
@@ -70,8 +70,8 @@ Analyze Wordle guesses and get AI-powered word predictions.
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
   "status": "complete",
   "solutions": [
-    { "word": "HOUSE", "probability": 85.2 },
-    { "word": "HORSE", "probability": 78.9 }
+    { "word": "AROSE", "probability": 85.2 },
+    { "word": "ARGUE", "probability": 78.9 }
   ],
   "confidence_score": 0.95,
   "processing_status": "complete"
@@ -100,11 +100,11 @@ const response = await fetch('https://wordlesolver.ai/api/wordle-solver', {
   },
   body: JSON.stringify({
     guessData: [
-      { letter: 'H', state: 'correct' },
-      { letter: 'O', state: 'present' },
-      { letter: 'U', state: 'absent' },
-      { letter: 'S', state: 'correct' },
-      { letter: 'E', state: 'absent' }
+      { letter: 'C', state: 'absent' },
+      { letter: 'R', state: 'present' },
+      { letter: 'A', state: 'present' },
+      { letter: 'N', state: 'absent' },
+      { letter: 'E', state: 'correct' }
     ],
     wordLength: 5
   })
@@ -113,6 +113,7 @@ const response = await fetch('https://wordlesolver.ai/api/wordle-solver', {
 const result = await response.json();
 if (response.ok) {
   console.log('Solutions:', result.solutions);
+  // Expected: [{ word: "AROSE", probability: 85.2 }, { word: "ARGUE", probability: 78.9 }]
 } else {
   console.error('API Error:', result.error);
 }
@@ -124,11 +125,11 @@ import requests
 
 response = requests.post('https://wordlesolver.ai/api/wordle-solver', json={
     'guessData': [
-        {'letter': 'H', 'state': 'correct'},
-        {'letter': 'O', 'state': 'present'},
-        {'letter': 'U', 'state': 'absent'},
-        {'letter': 'S', 'state': 'correct'},
-        {'letter': 'E', 'state': 'absent'}
+        {'letter': 'C', 'state': 'absent'},
+        {'letter': 'R', 'state': 'present'},
+        {'letter': 'A', 'state': 'present'},
+        {'letter': 'N', 'state': 'absent'},
+        {'letter': 'E', 'state': 'correct'}
     ],
     'wordLength': 5
 })
@@ -136,6 +137,7 @@ response = requests.post('https://wordlesolver.ai/api/wordle-solver', json={
 if response.status_code == 200:
     result = response.json()
     print('Solutions:', result['solutions'])
+    # Expected: [{'word': 'AROSE', 'probability': 85.2}, {'word': 'ARGUE', 'probability': 78.9}]
 else:
     error_result = response.json()
     print('API Error:', error_result['error'])
@@ -147,11 +149,11 @@ curl -X POST 'https://wordlesolver.ai/api/wordle-solver' \
   -H 'Content-Type: application/json' \
   -d '{
     "guessData": [
-      {"letter": "H", "state": "correct"},
-      {"letter": "O", "state": "present"},
-      {"letter": "U", "state": "absent"},
-      {"letter": "S", "state": "correct"},
-      {"letter": "E", "state": "absent"}
+      {"letter": "C", "state": "absent"},
+      {"letter": "R", "state": "present"},
+      {"letter": "A", "state": "present"},
+      {"letter": "N", "state": "absent"},
+      {"letter": "E", "state": "correct"}
     ],
     "wordLength": 5
   }'
