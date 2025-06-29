@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ApiAnalyzeEndpointProps {
   baseUrl: string;
@@ -29,7 +30,8 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Request Body</h3>
-          <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+          <ScrollArea className="w-full rounded border">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
 {`{
   "guessData": [
     { "letter": "H", "state": "correct" },
@@ -42,7 +44,8 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
   "excludedLetters": ["B", "C", "D"],
   "apiKey": "optional-api-key"
 }`}
-          </pre>
+            </pre>
+          </ScrollArea>
         </div>
 
         <div>
@@ -57,7 +60,8 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Success Response (Immediate)</h3>
-          <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+          <ScrollArea className="w-full rounded border">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
 {`{
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
   "status": "complete",
@@ -70,12 +74,14 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
   "processing_status": "complete",
   "message": "Analysis completed immediately"
 }`}
-          </pre>
+            </pre>
+          </ScrollArea>
         </div>
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Success Response (Async)</h3>
-          <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+          <ScrollArea className="w-full rounded border">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
 {`{
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
   "status": "processing",
@@ -83,7 +89,8 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
   "estimated_completion_seconds": 15,
   "status_url": "${baseUrl}/wordle-solver/status/123e..."
 }`}
-          </pre>
+            </pre>
+          </ScrollArea>
         </div>
 
         <div>
@@ -91,27 +98,33 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
           <div className="space-y-2">
             <div>
               <Badge variant="destructive">400 Bad Request</Badge>
-              <pre className="bg-red-50 p-2 rounded text-xs mt-1">
+              <ScrollArea className="w-full rounded border mt-1">
+                <pre className="bg-red-50 p-2 text-xs whitespace-pre">
 {`{
   "error": "Tile at position 4 has invalid state 'unknown'. Only 'correct', 'present', and 'absent' are allowed. All tiles must have a known state"
 }`}
-              </pre>
+                </pre>
+              </ScrollArea>
             </div>
             <div>
               <Badge variant="destructive">400 Bad Request</Badge>
-              <pre className="bg-red-50 p-2 rounded text-xs mt-1">
+              <ScrollArea className="w-full rounded border mt-1">
+                <pre className="bg-red-50 p-2 text-xs whitespace-pre">
 {`{
   "error": "guessData length (4) must match wordLength (5)"
 }`}
-              </pre>
+                </pre>
+              </ScrollArea>
             </div>
             <div>
               <Badge variant="destructive">429 Too Many Requests</Badge>
-              <pre className="bg-red-50 p-2 rounded text-xs mt-1">
+              <ScrollArea className="w-full rounded border mt-1">
+                <pre className="bg-red-50 p-2 text-xs whitespace-pre">
 {`{
   "error": "Rate limit exceeded"
 }`}
-              </pre>
+                </pre>
+              </ScrollArea>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ApiExamplesProps {
   baseUrl: string;
@@ -15,7 +16,8 @@ const ApiExamples = ({ baseUrl }: ApiExamplesProps) => {
       <CardContent className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold mb-2">JavaScript/Node.js</h3>
-          <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+          <ScrollArea className="w-full rounded border">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
 {`// Analyze a completed Wordle guess
 const response = await fetch('${baseUrl}/wordle-solver', {
   method: 'POST',
@@ -50,12 +52,14 @@ if (response.ok) {
 } else {
   console.error('API Error:', result.error);
 }`}
-          </pre>
+            </pre>
+          </ScrollArea>
         </div>
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Python</h3>
-          <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+          <ScrollArea className="w-full rounded border">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
 {`import requests
 import time
 
@@ -95,12 +99,14 @@ if response.status_code == 200:
 else:
     error_result = response.json()
     print('API Error:', error_result['error'])`}
-          </pre>
+            </pre>
+          </ScrollArea>
         </div>
 
         <div>
           <h3 className="text-lg font-semibold mb-2">cURL</h3>
-          <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+          <ScrollArea className="w-full rounded border">
+            <pre className="bg-slate-100 p-4 text-sm whitespace-pre">
 {`# Analyze a completed Wordle guess
 curl -X POST '${baseUrl}/wordle-solver' \\
   -H 'Content-Type: application/json' \\
@@ -130,7 +136,8 @@ curl -X POST '${baseUrl}/wordle-solver' \\
     "wordLength": 5
   }'
 # Returns: {"error": "Tile at position 0 has invalid state 'unknown'. Only 'correct', 'present', and 'absent' are allowed. All tiles must have a known state"}`}
-          </pre>
+            </pre>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>

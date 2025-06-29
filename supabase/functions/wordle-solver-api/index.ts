@@ -1,155 +1,12 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-};
-
-interface WordleAPIRequest {
-  guessData: Array<{letter: string, state: 'correct' | 'present' | 'absent'}>;
-  wordLength: number;
-  excludedLetters?: string[];
-  apiKey?: string;
-}
-
-interface WordleSolution {
-  word: string;
-  probability: number;
-}
-
-// Validate request input strictly
-function validateWordleRequest(request: WordleAPIRequest): {valid: boolean, error?: string} {
-  // Check if guessData exists and is array
-  if (!Array.isArray(request.guessData)) {
-    return { valid: false, error: 'guessData must be an array' };
-  }
-  
-  // Check wordLength
-  if (!request.wordLength || request.wordLength < 3 || request.wordLength > 15) {
-    return { valid: false, error: 'wordLength must be between 3 and 15' };
-  }
-  
-  // Check if guessData length matches wordLength
-  if (request.guessData.length !== request.wordLength) {
-    return { valid: false, error: `guessData length (${request.guessData.length}) must match wordLength (${request.wordLength})` };
-  }
-  
-  // Validate each tile in guessData
-  for (let i = 0; i < request.guessData.length; i++) {
-    const tile = request.guessData[i];
-    
-    // Check if tile has required properties
-    if (!tile.letter || !tile.state) {
-      return { valid: false, error: `Tile at position ${i} is missing letter or state` };
-    }
-    
-    // Check if letter is valid (single alphabetic character)
-    if (typeof tile.letter !== 'string' || tile.letter.length !== 1 || !/^[A-Za-z]$/.test(tile.letter)) {
-      return { valid: false, error: `Tile at position ${i} has invalid letter. Must be a single alphabetic character` };
-    }
-    
-    // Check if state is valid (only correct, present, or absent allowed)
-    if (!['correct', 'present', 'absent'].includes(tile.state)) {
-      return { valid: false, error: `Tile at position ${i} has invalid state '${tile.state}'. Only 'correct', 'present', and 'absent' are allowed. All tiles must have a known state` };
-    }
-  }
-  
-  return { valid: true };
-}
-
-// Rate limiting and API key validation
-async function validateRequest(apiKey?: string, clientId?: string): Promise<{valid: boolean, error?: string}> {
-  // Simple rate limiting check
-  if (clientId) {
-    const { data: usage } = await supabase
-      .from('api_usage')
-      .select('request_count, last_request')
-      .eq('api_key_hash', apiKey || 'anonymous')
-      .eq('endpoint', 'wordle-solver')
-      .single();
-    
-    if (usage && usage.request_count > 100) {
-      const hourAgo = new Date(Date.now() - 3600000).toISOString();
-      if (usage.last_request > hourAgo) {
-        return { valid: false, error: 'Rate limit exceeded' };
-      }
-    }
-  }
-  
-  return { valid: true };
-}
-
-// Track API usage
-async function trackUsage(apiKey?: string) {
-  const keyHash = apiKey || 'anonymous';
-  
-  const { data: existing } = await supabase
-    .from('api_usage')
-    .select('request_count')
-    .eq('api_key_hash', keyHash)
-    .eq('endpoint', 'wordle-solver')
-    .single();
-  
-  if (existing) {
-    await supabase
-      .from('api_usage')
-      .update({ 
-        request_count: existing.request_count + 1,
-        last_request: new Date().toISOString()
-      })
-      .eq('api_key_hash', keyHash)
-      .eq('endpoint', 'wordle-solver');
-  } else {
-    await supabase
-      .from('api_usage')
-      .insert({
-        api_key_hash: keyHash,
-        endpoint: 'wordle-solver',
-        request_count: 1,
-        last_request: new Date().toISOString()
-      });
-  }
-}
-
-// ML Analysis function (simplified version)
-async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = []): Promise<{solutions: WordleSolution[], status: string, confidence: number}> {
-  // Simulate ML processing time
-  const processingTime = Math.random() * 2000 + 1000; // 1-3 seconds
-  await new Promise(resolve => setTimeout(resolve, processingTime));
-  
-  // Call the existing analyze-wordle function
-  try {
-    const { data, error } = await supabase.functions.invoke('analyze-wordle', {
-      body: { guessData, wordLength, excludedLetters }
-    });
-    
-    if (error) throw error;
-    
-    const solutions = Array.isArray(data) ? data : [];
-    const confidence = solutions.length > 0 ? 0.95 : 0.5;
-    
-    return {
-      solutions: solutions.slice(0, 15), // Limit to top 15 results
-      status: solutions.length > 0 ? 'complete' : 'partial',
-      confidence
-    };
-  } catch (error) {
-    console.error('ML Analysis failed:', error);
-    return {
-      solutions: [],
-      status: 'failed',
-      confidence: 0.0
-    };
-  }
-}
+import { corsHeaders } from './corsConfig.ts';
+import { WordleAPIRequest } from './types.ts';
+import { validateWordleRequest } from './validation.ts';
+import { validateRequest, trackUsage } from './rateLimit.ts';
+import { performMLAnalysis } from './analysis.ts';
+import { createJob, updateJobStatus, storeResults, getJobStatus } from './jobManager.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -164,31 +21,16 @@ serve(async (req) => {
     const jobId = path.split('/status/')[1];
     
     try {
-      const { data: job, error: jobError } = await supabase
-        .from('analysis_jobs')
-        .select('*, analysis_results(*)')
-        .eq('id', jobId)
-        .single();
+      const jobStatus = await getJobStatus(jobId);
       
-      if (jobError || !job) {
+      if (!jobStatus) {
         return new Response(JSON.stringify({ error: 'Job not found' }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       
-      const response = {
-        job_id: job.id,
-        status: job.status,
-        created_at: job.created_at,
-        completed_at: job.completed_at,
-        estimated_completion_seconds: job.estimated_completion_seconds,
-        solutions: job.analysis_results?.[0]?.solutions || [],
-        confidence_score: job.analysis_results?.[0]?.confidence_score || 0,
-        processing_status: job.analysis_results?.[0]?.processing_status || 'initializing'
-      };
-      
-      return new Response(JSON.stringify(response), {
+      return new Response(JSON.stringify(jobStatus), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     } catch (error) {
@@ -235,22 +77,11 @@ serve(async (req) => {
       }));
       
       // Create job record
-      const { data: job, error: jobError } = await supabase
-        .from('analysis_jobs')
-        .insert({
-          input_data: { guessData: sanitizedGuessData, wordLength, excludedLetters },
-          status: 'processing',
-          estimated_completion_seconds: 15
-        })
-        .select()
-        .single();
-      
-      if (jobError || !job) {
-        return new Response(JSON.stringify({ error: 'Failed to create analysis job' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      const job = await createJob({ 
+        guessData: sanitizedGuessData, 
+        wordLength, 
+        excludedLetters 
+      });
       
       // Try immediate processing (with timeout)
       try {
@@ -259,26 +90,17 @@ serve(async (req) => {
           setTimeout(() => reject(new Error('timeout')), 10000)
         );
         
-        const result = await Promise.race([analysisPromise, timeoutPromise]) as {solutions: WordleSolution[], status: string, confidence: number};
+        const result = await Promise.race([analysisPromise, timeoutPromise]);
         
         // Update job as complete
-        await supabase
-          .from('analysis_jobs')
-          .update({ 
-            status: result.status === 'failed' ? 'failed' : 'complete',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', job.id);
+        await updateJobStatus(
+          job.id, 
+          result.status === 'failed' ? 'failed' : 'complete',
+          new Date().toISOString()
+        );
         
         // Store results
-        await supabase
-          .from('analysis_results')
-          .insert({
-            job_id: job.id,
-            solutions: result.solutions,
-            confidence_score: result.confidence,
-            processing_status: 'complete'
-          });
+        await storeResults(job.id, result.solutions, result.confidence, 'complete');
         
         // Return immediate response
         return new Response(JSON.stringify({
@@ -300,33 +122,22 @@ serve(async (req) => {
         EdgeRuntime.waitUntil(
           performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [])
             .then(async (result) => {
-              await supabase
-                .from('analysis_jobs')
-                .update({ 
-                  status: result.status === 'failed' ? 'failed' : 'complete',
-                  completed_at: new Date().toISOString()
-                })
-                .eq('id', job.id);
+              await updateJobStatus(
+                job.id, 
+                result.status === 'failed' ? 'failed' : 'complete',
+                new Date().toISOString()
+              );
               
-              await supabase
-                .from('analysis_results')
-                .insert({
-                  job_id: job.id,
-                  solutions: result.solutions,
-                  confidence_score: result.confidence,
-                  processing_status: 'complete'
-                });
+              await storeResults(job.id, result.solutions, result.confidence, 'complete');
             })
             .catch(async (error) => {
               console.error('Background processing failed:', error);
-              await supabase
-                .from('analysis_jobs')
-                .update({ 
-                  status: 'failed',
-                  completed_at: new Date().toISOString(),
-                  error_message: error.message
-                })
-                .eq('id', job.id);
+              await updateJobStatus(
+                job.id, 
+                'failed',
+                new Date().toISOString(),
+                error.message
+              );
             })
         );
         
