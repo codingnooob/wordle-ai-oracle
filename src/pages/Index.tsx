@@ -36,6 +36,12 @@ const Index = () => {
           paddingRight: 'clamp(0.25rem, 2vw, 1rem)'
         }}>
           <div className="text-center" style={{ marginBottom: 'clamp(0.5rem, 3vw, 2rem)' }}>
+            <h1 className="font-bold text-slate-800" style={{ 
+              fontSize: 'clamp(1.125rem, 4vw, 2.25rem)',
+              marginBottom: 'clamp(0.25rem, 1vw, 0.5rem)'
+            }}>
+              Wordle AI Oracle
+            </h1>
             <p className="text-slate-600" style={{ fontSize: 'clamp(0.75rem, 2vw, 1.125rem)' }}>
               Enter your guess and let AI find the most likely solutions
             </p>
