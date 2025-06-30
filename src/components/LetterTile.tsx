@@ -57,7 +57,7 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
       aria-label={`Letter ${letter || 'empty'}, state: ${state}. Click to change state.`}
     >
       <div
-        className={`text-center font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} flex items-center justify-center`}
+        className={`text-center font-bold uppercase border-2 rounded-md transition-all duration-200 ${getStateStyles()} flex items-center justify-center`}
         style={{
           width: 'clamp(32px, 8vw, 64px)',
           height: 'clamp(32px, 8vw, 64px)',
