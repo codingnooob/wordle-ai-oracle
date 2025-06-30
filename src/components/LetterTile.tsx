@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 
 interface LetterTileProps {
   letter: string;
@@ -38,31 +37,38 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
   };
 
   return (
-    <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(0.5rem, 2vw, 2rem)' }}>
-      <Input
-        value={letter}
-        onChange={() => {}} // Disabled - letters are set from the main word input
-        onFocus={() => setIsActive(true)}
-        onBlur={() => setIsActive(false)}
-        className={`text-center font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} ${
-          isActive ? 'ring-2 ring-blue-300 ring-offset-2' : ''
-        }`}
+    <div
+      className={`flex flex-col items-center cursor-pointer transition-all duration-200 hover:scale-105 ${
+        isActive ? 'ring-2 ring-blue-300 ring-offset-2' : ''
+      }`}
+      style={{ marginBottom: 'clamp(0.5rem, 2vw, 2rem)' }}
+      onClick={cycleState}
+      onMouseDown={() => setIsActive(true)}
+      onMouseUp={() => setIsActive(false)}
+      onMouseLeave={() => setIsActive(false)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          cycleState();
+        }
+      }}
+      aria-label={`Letter ${letter || 'empty'}, state: ${state}. Click to change state.`}
+    >
+      <div
+        className={`text-center font-bold uppercase border-2 transition-all duration-200 ${getStateStyles()} flex items-center justify-center`}
         style={{
           width: 'clamp(32px, 8vw, 64px)',
           height: 'clamp(32px, 8vw, 64px)',
           fontSize: 'clamp(0.5rem, 2vw, 1.25rem)',
           padding: '0',
           lineHeight: '1',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'visible'
         }}
-        maxLength={1}
-        readOnly
-      />
-      <button
-        onClick={cycleState}
+      >
+        {letter}
+      </div>
+      <div
         className="text-slate-500 hover:text-slate-700 transition-colors duration-200 text-center"
         style={{
           marginTop: 'clamp(0.125rem, 0.5vw, 0.25rem)',
@@ -74,7 +80,7 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
         }}
       >
         {getButtonText()}
-      </button>
+      </div>
     </div>
   );
 };
