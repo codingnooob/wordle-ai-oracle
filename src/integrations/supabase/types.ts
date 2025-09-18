@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           estimated_completion_seconds: number | null
+          expires_at: string | null
           id: string
           input_data: Json
           session_token: string
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           estimated_completion_seconds?: number | null
+          expires_at?: string | null
           id?: string
           input_data: Json
           session_token?: string
@@ -40,6 +42,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           estimated_completion_seconds?: number | null
+          expires_at?: string | null
           id?: string
           input_data?: Json
           session_token?: string
