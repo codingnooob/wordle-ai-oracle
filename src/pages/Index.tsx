@@ -26,10 +26,10 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
       <Header />
       
-      <div className="w-full" style={{ padding: 'clamp(0.25rem, 2vw, 1rem)' }}>
+      <div className="flex-1 w-full" style={{ padding: 'clamp(0.25rem, 2vw, 1rem)' }}>
         <div className="mx-auto" style={{ 
           maxWidth: 'clamp(280px, 95vw, 1200px)',
           paddingLeft: 'clamp(0.25rem, 2vw, 1rem)',

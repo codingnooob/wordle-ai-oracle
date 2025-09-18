@@ -3,8 +3,7 @@ import { Github, Heart } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="border-t border-slate-200 bg-white/50 backdrop-blur-sm" style={{ 
-      marginTop: 'clamp(2rem, 8vw, 3rem)',
+    <footer className="border-t border-slate-200 bg-white/50 backdrop-blur-sm mt-auto" style={{ 
       paddingTop: 'clamp(1.5rem, 4vw, 2rem)',
       paddingBottom: 'clamp(1.5rem, 4vw, 2rem)'
     }}>
