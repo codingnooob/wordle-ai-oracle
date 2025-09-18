@@ -49,8 +49,12 @@ if (response.ok) {
     //   { word: "ARGUE", probability: 78.9 }
     // ]
   } else if (result.status === 'processing') {
-    // Check status later
-    const statusResponse = await fetch(\`${baseUrl}/wordle-solver/status/\${result.job_id}\`);
+    // Store the session token for status checking
+    const jobId = result.job_id;
+    const sessionToken = result.session_token;
+    
+    // Check status later using both job_id and session_token
+    const statusResponse = await fetch(\`${baseUrl}/wordle-solver/status/\${jobId}/\${sessionToken}\`);
     const statusResult = await statusResponse.json();
     console.log('Status:', statusResult.status);
   }
@@ -96,10 +100,13 @@ if response.status_code == 200:
         #   {'word': 'ARGUE', 'probability': 78.9}
         # ]
     elif result['status'] == 'processing':
-        # Poll for completion
+        # Store session token for status checking
         job_id = result['job_id']
+        session_token = result['session_token']
+        
+        # Poll for completion using both job_id and session_token
         while True:
-            status_response = requests.get(f'{baseUrl}/wordle-solver/status/{job_id}')
+            status_response = requests.get(f'{baseUrl}/wordle-solver/status/{job_id}/{session_token}')
             status_result = status_response.json()
             
             if status_result['status'] in ['complete', 'failed', 'partial']:
@@ -138,6 +145,7 @@ curl -X POST '${baseUrl}/wordle-solver' \\
 # Example successful response (actual results may vary):
 # {
 #   "job_id": "123e4567-e89b-12d3-a456-426614174000",
+#   "session_token": "abcd1234-5678-90ef-ghij-klmnopqrstuv",
 #   "status": "complete",
 #   "solutions": [
 #     {"word": "AROSE", "probability": 85.2},
@@ -145,8 +153,8 @@ curl -X POST '${baseUrl}/wordle-solver' \\
 #   ]
 # }
 
-# Check status of async job
-curl '${baseUrl}/wordle-solver/status/123e4567-e89b-12d3-a456-426614174000'
+# Check status of async job using both job_id and session_token
+curl '${baseUrl}/wordle-solver/status/123e4567-e89b-12d3-a456-426614174000/abcd1234-5678-90ef-ghij-klmnopqrstuv'
 
 # Example error response for validation failure
 curl -X POST '${baseUrl}/wordle-solver' \\

@@ -16,30 +16,38 @@ serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Handle status check endpoint
-  if (req.method === 'GET' && path.includes('/status/')) {
-    const jobId = path.split('/status/')[1];
-    
-    try {
-      const jobStatus = await getJobStatus(jobId);
-      
-      if (!jobStatus) {
-        return new Response(JSON.stringify({ error: 'Job not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      // Handle status check endpoint
+      if (req.method === 'GET' && path.includes('/status/')) {
+        const pathParts = path.split('/status/')[1];
+        const [jobId, sessionToken] = pathParts.split('/');
+        
+        if (!sessionToken) {
+          return new Response(JSON.stringify({ error: 'Session token required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        try {
+          const jobStatus = await getJobStatus(jobId, sessionToken);
+          
+          if (!jobStatus) {
+            return new Response(JSON.stringify({ error: 'Job not found or invalid session token' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          return new Response(JSON.stringify(jobStatus), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Internal server error' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
       }
-      
-      return new Response(JSON.stringify(jobStatus), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    } catch (error) {
-      return new Response(JSON.stringify({ error: 'Internal server error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-  }
 
   // Handle main API endpoint
   if (req.method === 'POST') {
@@ -105,6 +113,7 @@ serve(async (req) => {
         // Return immediate response
         return new Response(JSON.stringify({
           job_id: job.id,
+          session_token: job.session_token,
           status: result.status,
           solutions: result.solutions,
           confidence_score: result.confidence,
@@ -143,10 +152,11 @@ serve(async (req) => {
         
         return new Response(JSON.stringify({
           job_id: job.id,
+          session_token: job.session_token,
           status: 'processing',
-          message: 'Analysis started, check status using the job_id',
+          message: 'Analysis started, check status using the job_id and session_token',
           estimated_completion_seconds: 15,
-          status_url: `${req.url}/status/${job.id}`
+          status_url: `${req.url}/status/${job.id}/${job.session_token}`
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

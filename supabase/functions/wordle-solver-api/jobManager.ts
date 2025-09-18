@@ -13,7 +13,7 @@ export async function createJob(inputData: any) {
       status: 'processing',
       estimated_completion_seconds: 15
     })
-    .select()
+    .select('id, session_token, status, created_at, estimated_completion_seconds')
     .single();
   
   if (jobError || !job) {
@@ -45,11 +45,12 @@ export async function storeResults(jobId: string, solutions: any[], confidence: 
     });
 }
 
-export async function getJobStatus(jobId: string) {
+export async function getJobStatus(jobId: string, sessionToken: string) {
   const { data: job, error: jobError } = await supabase
     .from('analysis_jobs')
     .select('*, analysis_results(*)')
     .eq('id', jobId)
+    .eq('session_token', sessionToken)
     .single();
   
   if (jobError || !job) {

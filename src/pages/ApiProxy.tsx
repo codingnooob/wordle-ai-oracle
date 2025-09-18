@@ -21,9 +21,19 @@ const ApiProxy = () => {
         let response: Response;
         
         if (path.startsWith('/api/wordle-solver/status/')) {
-          // Handle status endpoint
-          const jobId = path.split('/status/')[1];
-          response = await proxyToSupabase('wordle-solver-api', request, `/status/${jobId}`);
+          // Handle status endpoint with session token
+          const pathSegments = path.split('/status/')[1].split('/');
+          const jobId = pathSegments[0];
+          const sessionToken = pathSegments[1];
+          
+          if (!sessionToken) {
+            response = new Response(JSON.stringify({ error: 'Session token required' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          } else {
+            response = await proxyToSupabase('wordle-solver-api', request, `/status/${jobId}/${sessionToken}`);
+          }
         } else if (path.startsWith('/api/wordle-solver')) {
           // Handle main endpoint
           response = await proxyToSupabase('wordle-solver-api', request);

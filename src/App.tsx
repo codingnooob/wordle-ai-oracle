@@ -22,7 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/api-docs" element={<ApiDocs />} />
           <Route path="/api/wordle-solver" element={<ApiProxy />} />
-          <Route path="/api/wordle-solver/status/:jobId" element={<ApiProxy />} />
+          <Route path="/api/wordle-solver/status/:jobId/:sessionToken" element={<ApiProxy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
