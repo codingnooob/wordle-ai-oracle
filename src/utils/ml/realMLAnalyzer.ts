@@ -45,7 +45,8 @@ export class RealMLAnalyzer {
   async analyzeGuess(
     guessData: GuessData[], 
     wordLength: number, 
-    excludedLetters: Set<string>
+    excludedLetters: Set<string>,
+    positionExclusions: Map<string, Set<number>> = new Map()
   ): Promise<MLWordleSolution[]> {
     if (!this.modelInitializer.isModelInitialized()) {
       await this.initialize();
@@ -61,12 +62,23 @@ export class RealMLAnalyzer {
       SecurityUtils.secureLog('Input constraints:', { 
         guessDataLength: guessData.length, 
         wordLength, 
-        excludedLettersCount: excludedLetters.size 
+        excludedLettersCount: excludedLetters.size,
+        positionExclusionsCount: positionExclusions.size
       });
 
       // Step 1: Analyze constraints from guess data
       const guessHistory = [{ guess: guessData, timestamp: Date.now() }];
       const constraints = analyzeConstraints(guessHistory);
+      
+      // Merge manual position exclusions with constraint-derived exclusions
+      for (const [letter, positions] of positionExclusions) {
+        for (const position of positions) {
+          if (!constraints.positionExclusions.has(position)) {
+            constraints.positionExclusions.set(position, new Set());
+          }
+          constraints.positionExclusions.get(position)!.add(letter);
+        }
+      }
       
       SecurityUtils.secureLog('Analyzed constraints:', {
         correctPositions: Array.from(constraints.correctPositions.entries()),

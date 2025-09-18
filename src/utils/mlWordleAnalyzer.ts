@@ -18,11 +18,12 @@ class MLWordleAnalyzer {
     console.log('Enhanced ML Wordle Analyzer initialized successfully');
   }
 
-  async analyzeGuess(guessData: GuessData[], wordLength: number, excludedLetters: Set<string> = new Set()): Promise<MLWordleSolution[]> {
+  async analyzeGuess(guessData: GuessData[], wordLength: number, excludedLetters: Set<string> = new Set(), positionExclusions: Map<string, Set<number>> = new Map()): Promise<MLWordleSolution[]> {
     console.log('=== Starting Enhanced ML Analysis ===');
     console.log('Input guess data:', guessData);
     console.log('Word length:', wordLength);
     console.log('Excluded letters:', Array.from(excludedLetters));
+    console.log('Position exclusions:', positionExclusions);
     
     // Check for duplicate letters in input for debugging
     this.debugDuplicateLetterInput(guessData);
@@ -34,12 +35,12 @@ class MLWordleAnalyzer {
 
     try {
       // Use real ML analyzer to get genuine probabilities
-      const solutions = await realMLAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters);
+      const solutions = await realMLAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters, positionExclusions);
       
       if (solutions.length === 0) {
         console.log('⚠️ No solutions found - this might be the duplicate letter bug!');
         console.log('Falling back to enhanced fallback analysis...');
-        return this.enhancedFallbackAnalysis(guessData, wordLength, excludedLetters);
+        return this.enhancedFallbackAnalysis(guessData, wordLength, excludedLetters, positionExclusions);
       }
       
       // Convert raw ML probabilities (0-1) to percentage for display
@@ -52,7 +53,7 @@ class MLWordleAnalyzer {
       return solutionsWithPercentage;
     } catch (error) {
       console.error('Enhanced ML Analysis failed:', error);
-      return this.enhancedFallbackAnalysis(guessData, wordLength, excludedLetters);
+      return this.enhancedFallbackAnalysis(guessData, wordLength, excludedLetters, positionExclusions);
     }
   }
 
@@ -85,7 +86,7 @@ class MLWordleAnalyzer {
     }
   }
 
-  private enhancedFallbackAnalysis(guessData: GuessData[], wordLength: number, excludedLetters: Set<string>): MLWordleSolution[] {
+  private enhancedFallbackAnalysis(guessData: GuessData[], wordLength: number, excludedLetters: Set<string>, positionExclusions: Map<string, Set<number>> = new Map()): MLWordleSolution[] {
     console.log('=== Enhanced Fallback Analysis ===');
     console.log('Using enhanced constraint analysis for duplicate letters...');
     
@@ -93,6 +94,16 @@ class MLWordleAnalyzer {
     const { analyzeConstraints, validateWordAgainstConstraints } = require('./constraintAnalyzer');
     const guessHistory = [{ guess: guessData, timestamp: Date.now() }];
     const constraints = analyzeConstraints(guessHistory);
+    
+    // Merge manual position exclusions with constraint-derived exclusions
+    for (const [letter, positions] of positionExclusions) {
+      for (const position of positions) {
+        if (!constraints.positionExclusions.has(position)) {
+          constraints.positionExclusions.set(position, new Set());
+        }
+        constraints.positionExclusions.get(position)!.add(letter);
+      }
+    }
     
     console.log('Enhanced constraints generated:', constraints);
     

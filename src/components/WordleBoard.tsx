@@ -5,6 +5,7 @@ import GuessGrid from '@/components/GuessGrid';
 import Keyboard from '@/components/Keyboard';
 import AnalysisControls from '@/components/AnalysisControls';
 import MLStatusIndicator from '@/components/MLStatusIndicator';
+import PositionExclusion from '@/components/PositionExclusion';
 import { useMLStatus } from '@/hooks/useMLStatus';
 import { mlWordleAnalyzer } from '@/utils/mlWordleAnalyzer';
 
@@ -20,6 +21,7 @@ interface WordleBoardProps {
 const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyzing, setAnalyzing }: WordleBoardProps) => {
   const [wordInput, setWordInput] = useState('');
   const [excludedLetters, setExcludedLetters] = useState<Set<string>>(new Set());
+  const [positionExclusions, setPositionExclusions] = useState<Map<string, Set<number>>>(new Map());
   const { mlStatus, cacheStatus } = useMLStatus();
 
   useEffect(() => {
@@ -31,6 +33,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setGuessData(newGuessData);
     setWordInput('');
     setExcludedLetters(new Set());
+    setPositionExclusions(new Map());
   }, [wordLength, setGuessData]);
 
   const handleWordInputChange = (value: string) => {
@@ -65,6 +68,30 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     });
   };
 
+  const handlePositionExclusionChange = (letter: string, position: number, excluded: boolean) => {
+    setPositionExclusions(prev => {
+      const newMap = new Map(prev);
+      if (!newMap.has(letter)) {
+        newMap.set(letter, new Set());
+      }
+      
+      const letterExclusions = new Set(newMap.get(letter));
+      if (excluded) {
+        letterExclusions.add(position);
+      } else {
+        letterExclusions.delete(position);
+      }
+      
+      if (letterExclusions.size === 0) {
+        newMap.delete(letter);
+      } else {
+        newMap.set(letter, letterExclusions);
+      }
+      
+      return newMap;
+    });
+  };
+
   const handleAnalyze = async () => {
     const hasValidInput = guessData.every(tile => tile.letter.trim() !== '' && tile.state !== 'unknown');
     if (!hasValidInput) return;
@@ -73,9 +100,10 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     try {
       console.log('Starting real ML analysis for guess:', guessData);
       console.log('Excluded letters:', Array.from(excludedLetters));
+      console.log('Position exclusions:', positionExclusions);
       
-      // Use real ML analyzer
-      const solutions = await mlWordleAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters);
+      // Use real ML analyzer with position exclusions
+      const solutions = await mlWordleAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters, positionExclusions);
       setSolutions(solutions);
       
       console.log('Real ML Analysis complete:', solutions);
@@ -96,6 +124,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setSolutions([]);
     setWordInput('');
     setExcludedLetters(new Set());
+    setPositionExclusions(new Map());
   };
 
   // Updated validation: ALL tiles must have letters AND ALL tiles must have a state other than 'unknown'
@@ -127,6 +156,13 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
         excludedLetters={excludedLetters}
         onLetterExclude={handleLetterExclude}
         onLetterInclude={handleLetterInclude}
+      />
+
+      <PositionExclusion
+        wordLength={wordLength}
+        guessData={guessData}
+        positionExclusions={positionExclusions}
+        onPositionExclusionChange={handlePositionExclusionChange}
       />
 
       <AnalysisControls
