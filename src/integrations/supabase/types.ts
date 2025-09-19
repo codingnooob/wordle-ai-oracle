@@ -142,9 +142,65 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          api_key_hash: string | null
+          created_at: string
+          details: Json | null
+          endpoint: string | null
+          event_type: string
+          id: string
+          severity: string | null
+          source_ip: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_hash?: string | null
+          created_at?: string
+          details?: Json | null
+          endpoint?: string | null
+          event_type: string
+          id?: string
+          severity?: string | null
+          source_ip?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_hash?: string | null
+          created_at?: string
+          details?: Json | null
+          endpoint?: string | null
+          event_type?: string
+          id?: string
+          severity?: string | null
+          source_ip?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      api_usage_rate_limit: {
+        Row: {
+          created_at: string | null
+          endpoint: string | null
+          last_request: string | null
+          request_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint?: string | null
+          last_request?: string | null
+          request_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string | null
+          last_request?: string | null
+          request_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       validate_session_token: {
