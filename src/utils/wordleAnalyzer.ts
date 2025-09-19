@@ -120,7 +120,7 @@ class WordleAnalyzer {
     console.log('ML-determined probabilities:', validWords.slice(0, 5).map(w => `${w.word}: ${(w.probability * 100).toFixed(1)}%`));
     console.log('Final display probabilities:', solutions.slice(0, 5).map(s => `${s.word}: ${s.probability}%`));
     
-    return solutions.slice(0, 50);
+    return solutions.filter(s => s.probability > 1); // Only return words with >1% probability
   }
 
   private calculateGenuineMLProbability(

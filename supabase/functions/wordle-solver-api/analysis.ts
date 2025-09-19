@@ -23,7 +23,7 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
     const confidence = solutions.length > 0 ? 0.95 : 0.5;
     
     return {
-      solutions: solutions.slice(0, 50), // Limit to top 50 results
+      solutions: solutions.filter(s => s.probability > 1), // Only return meaningful results
       status: solutions.length > 0 ? 'complete' : 'partial',
       confidence
     };

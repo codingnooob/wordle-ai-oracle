@@ -151,8 +151,9 @@ export class RealMLAnalyzer {
         validWords // Pass the corpus words for frequency scoring
       );
 
-      const finalResults = scoredWords.slice(0, 50);
-      SecurityUtils.secureLog('Final real word results:', finalResults.map(r => `${r.word}: ${(r.probability * 100).toFixed(1)}%`));
+      // Return all scored solutions with meaningful probabilities
+      const finalResults = scoredWords.filter(result => result.probability > 0.01); // Only return words with >1% probability
+      SecurityUtils.secureLog('Final real word results:', finalResults.slice(0, 10).map(r => `${r.word}: ${(r.probability * 100).toFixed(1)}%`));
 
       return finalResults;
 

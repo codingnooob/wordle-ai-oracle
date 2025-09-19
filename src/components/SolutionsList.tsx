@@ -1,6 +1,6 @@
 
 import { Trophy, Target, Brain, Zap, AlertCircle, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SolutionsListProps {
   solutions: Array<{word: string, probability: number}>;
@@ -10,6 +10,11 @@ interface SolutionsListProps {
 const SolutionsList = ({ solutions, analyzing }: SolutionsListProps) => {
   const [displayCount, setDisplayCount] = useState(15);
   const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Reset display count to 15 whenever new solutions arrive
+  useEffect(() => {
+    setDisplayCount(15);
+  }, [solutions]);
   
   const displayedSolutions = solutions.slice(0, displayCount);
   const hasMore = solutions.length > displayCount;
