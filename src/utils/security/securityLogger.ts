@@ -12,9 +12,43 @@ export class SecurityLogger {
   }> = [];
 
   /**
-   * Log security events with proper sanitization
+   * Log security events using the secure database function
    */
-  static logSecurityEvent(
+  static async logSecurityEvent(
+    level: 'info' | 'warn' | 'error',
+    event: string,
+    details?: any
+  ): Promise<void> {
+    try {
+      // For client-side logging, we'll use the Supabase client
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Use the secure logging function instead of direct table access
+      const { error } = await supabase.rpc('log_security_event', {
+        p_event_type: event,
+        p_severity: level,
+        p_details: this.sanitizeLogData(details),
+        p_source_ip: this.getClientIP(),
+        p_user_agent: navigator.userAgent?.substring(0, 500) || null,
+        p_endpoint: window.location.pathname || null
+      });
+
+      if (error) {
+        console.error('Failed to log security event:', error);
+        // Fallback to local logging
+        this.logLocally(level, event, details);
+      }
+    } catch (error) {
+      console.error('Security logging error:', error);
+      // Fallback to local logging
+      this.logLocally(level, event, details);
+    }
+  }
+
+  /**
+   * Fallback local logging for when database logging fails
+   */
+  private static logLocally(
     level: 'info' | 'warn' | 'error',
     event: string,
     details?: any
@@ -46,7 +80,16 @@ export class SecurityLogger {
   }
 
   /**
-   * Sanitize log data to prevent log injection
+   * Get client IP (limited on client-side, mainly for development)
+   */
+  private static getClientIP(): string | null {
+    // In production, this would typically be handled server-side
+    // Client-side IP detection is limited and unreliable
+    return null;
+  }
+
+  /**
+   * Sanitize log data to prevent log injection and redact sensitive information
    */
   private static sanitizeLogData(data: any): any {
     if (typeof data === 'string') {
@@ -57,7 +100,7 @@ export class SecurityLogger {
       const sanitized: any = {};
       for (const [key, value] of Object.entries(data)) {
         // Skip sensitive fields
-        if (['password', 'token', 'secret', 'key'].some(sensitive => 
+        if (['password', 'token', 'secret', 'key', 'auth', 'session', 'private'].some(sensitive => 
           key.toLowerCase().includes(sensitive))) {
           sanitized[key] = '[REDACTED]';
         } else {
@@ -85,12 +128,12 @@ export class SecurityLogger {
   }
 
   /**
-   * Log API request attempts
+   * Log API request attempts with enhanced security
    */
-  static logApiRequest(endpoint: string, success: boolean, details?: any): void {
-    this.logSecurityEvent(
+  static async logApiRequest(endpoint: string, success: boolean, details?: any): Promise<void> {
+    await this.logSecurityEvent(
       success ? 'info' : 'warn',
-      `API_REQUEST_${success ? 'SUCCESS' : 'FAILED'}`,
+      success ? 'API_REQUEST_SUCCESS' : 'API_REQUEST_FAILED',
       {
         endpoint,
         timestamp: new Date().toISOString(),
@@ -102,8 +145,8 @@ export class SecurityLogger {
   /**
    * Log input validation failures
    */
-  static logValidationFailure(field: string, value: any, reason: string): void {
-    this.logSecurityEvent('warn', 'VALIDATION_FAILURE', {
+  static async logValidationFailure(field: string, value: any, reason: string): Promise<void> {
+    await this.logSecurityEvent('warn', 'VALIDATION_FAILURE', {
       field,
       value: typeof value === 'string' ? value.substring(0, 50) : '[OBJECT]',
       reason
@@ -113,11 +156,32 @@ export class SecurityLogger {
   /**
    * Log rate limiting events
    */
-  static logRateLimit(endpoint: string, attempts: number): void {
-    this.logSecurityEvent('warn', 'RATE_LIMIT_HIT', {
+  static async logRateLimit(endpoint: string, attempts: number): Promise<void> {
+    await this.logSecurityEvent('error', 'RATE_LIMIT_EXCEEDED', {
       endpoint,
       attempts,
       timestamp: new Date().toISOString()
     });
+  }
+
+  /**
+   * Log security violations
+   */
+  static async logSecurityViolation(violation: string, context?: any): Promise<void> {
+    await this.logSecurityEvent('error', 'SECURITY_VIOLATION', {
+      violation,
+      context: this.sanitizeLogData(context)
+    });
+  }
+
+  /**
+   * Log authentication events
+   */
+  static async logAuthEvent(event: string, success: boolean, details?: any): Promise<void> {
+    await this.logSecurityEvent(
+      success ? 'info' : 'warn',
+      `AUTH_${event.toUpperCase()}`,
+      { success, ...this.sanitizeLogData(details) }
+    );
   }
 }

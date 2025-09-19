@@ -180,38 +180,21 @@ export type Database = {
       }
     }
     Views: {
-      security_events_summary: {
-        Row: {
-          created_at: string | null
-          endpoint: string | null
-          event_type: string | null
-          id: string | null
-          severity: string | null
-          source_ip_status: string | null
-          user_agent_status: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          endpoint?: string | null
-          event_type?: string | null
-          id?: string | null
-          severity?: string | null
-          source_ip_status?: never
-          user_agent_status?: never
-        }
-        Update: {
-          created_at?: string | null
-          endpoint?: string | null
-          event_type?: string | null
-          id?: string | null
-          severity?: string | null
-          source_ip_status?: never
-          user_agent_status?: never
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_security_events_summary: {
+        Args: { hours_back?: number }
+        Returns: {
+          created_at: string
+          endpoint: string
+          event_type: string
+          id: string
+          severity: string
+          source_ip_status: string
+          user_agent_status: string
+        }[]
+      }
       log_security_event: {
         Args: {
           p_api_key_hash?: string
