@@ -180,9 +180,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      security_events_summary: {
+        Row: {
+          created_at: string | null
+          endpoint: string | null
+          event_type: string | null
+          id: string | null
+          severity: string | null
+          source_ip_status: string | null
+          user_agent_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint?: string | null
+          event_type?: string | null
+          id?: string | null
+          severity?: string | null
+          source_ip_status?: never
+          user_agent_status?: never
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string | null
+          event_type?: string | null
+          id?: string | null
+          severity?: string | null
+          source_ip_status?: never
+          user_agent_status?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      log_security_event: {
+        Args: {
+          p_api_key_hash?: string
+          p_details?: Json
+          p_endpoint?: string
+          p_event_type: string
+          p_severity?: string
+          p_source_ip?: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       validate_session_token: {
         Args: { job_id: string; token: string }
         Returns: boolean
