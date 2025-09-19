@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from './corsConfig.ts';
 import { WordleAPIRequest } from './types.ts';
 import { validateWordleRequest } from './validation.ts';
-import { validateRequest, trackUsage } from './rateLimit.ts';
+import { validateRequest, trackUsage, validateRequestSize } from './rateLimit.ts';
 import { performMLAnalysis } from './analysis.ts';
 import { createJob, updateJobStatus, storeResults, getJobStatus } from './jobManager.ts';
 
@@ -52,6 +52,15 @@ serve(async (req) => {
   // Handle main API endpoint
   if (req.method === 'POST') {
     try {
+      // Validate request size first
+      const sizeValidation = validateRequestSize(req);
+      if (!sizeValidation.valid) {
+        return new Response(JSON.stringify({ error: sizeValidation.error }), {
+          status: 413,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       const requestBody: WordleAPIRequest = await req.json();
       
       // Validate input format first
@@ -88,11 +97,12 @@ serve(async (req) => {
         state: tile.state
       }));
       
-      // Create job record
+      // Create job record with source IP for tracking
       const job = await createJob({ 
         guessData: sanitizedGuessData, 
         wordLength, 
-        excludedLetters 
+        excludedLetters,
+        source_ip: sourceIp
       });
       
       // Try immediate processing (with timeout)

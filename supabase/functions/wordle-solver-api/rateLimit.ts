@@ -13,6 +13,33 @@ export async function validateRequest(apiKey?: string, clientId?: string, source
     const now = new Date();
     const hourAgo = new Date(now.getTime() - 3600000);
     
+    // Check IP-based job creation limit (10 jobs per IP per hour)
+    if (sourceIp && sourceIp !== 'unknown') {
+      const { data: ipJobCount } = await supabase
+        .from('analysis_jobs')
+        .select('id')
+        .gte('created_at', hourAgo.toISOString())
+        .contains('input_data', { source_ip: sourceIp });
+      
+      if (ipJobCount && ipJobCount.length >= 10) {
+        await supabase
+          .from('security_events')
+          .insert({
+            event_type: 'ip_job_limit_exceeded',
+            source_ip: sourceIp,
+            endpoint: 'wordle-solver',
+            details: {
+              job_count: ipJobCount.length,
+              limit: 10,
+              timeframe: '1 hour'
+            },
+            severity: 'warning'
+          });
+        
+        return { valid: false, error: 'Too many jobs created from this IP. Please wait before creating more jobs.' };
+      }
+    }
+    
     // Check API key usage
     const { data: usage } = await supabase
       .from('api_usage')
@@ -50,6 +77,25 @@ export async function validateRequest(apiKey?: string, clientId?: string, source
     console.error('Rate limit validation error:', error);
     return { valid: true }; // Allow on error to avoid blocking legitimate users
   }
+}
+
+export function validateRequestSize(request: Request): { valid: boolean; error?: string } {
+  const contentLength = request.headers.get('content-length');
+  
+  if (contentLength) {
+    const size = parseInt(contentLength);
+    // Limit request size to 50KB to prevent large payload attacks
+    const maxSize = 50 * 1024; // 50KB
+    
+    if (size > maxSize) {
+      return { 
+        valid: false, 
+        error: `Request too large. Maximum size is ${maxSize} bytes.` 
+      };
+    }
+  }
+  
+  return { valid: true };
 }
 
 export async function trackUsage(apiKey?: string, sourceIp?: string) {
