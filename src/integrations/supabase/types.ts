@@ -183,6 +183,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_sensitive_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_security_events_summary: {
         Args: { hours_back?: number }
         Returns: {
