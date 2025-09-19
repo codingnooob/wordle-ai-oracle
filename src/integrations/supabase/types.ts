@@ -183,9 +183,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_api_usage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_sensitive_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_api_usage_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_requests_per_key: number
+          endpoint: string
+          time_period: string
+          total_requests: number
+          unique_keys: number
+        }[]
       }
       get_security_events_summary: {
         Args: { hours_back?: number }
