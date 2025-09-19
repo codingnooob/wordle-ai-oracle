@@ -180,27 +180,7 @@ export type Database = {
       }
     }
     Views: {
-      api_usage_rate_limit: {
-        Row: {
-          created_at: string | null
-          endpoint: string | null
-          last_request: string | null
-          request_count: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          endpoint?: string | null
-          last_request?: string | null
-          request_count?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          endpoint?: string | null
-          last_request?: string | null
-          request_count?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       validate_session_token: {

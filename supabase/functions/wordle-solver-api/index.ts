@@ -66,8 +66,12 @@ serve(async (req) => {
       const { guessData, wordLength, excludedLetters, apiKey } = requestBody;
       
       // Validate request and rate limiting
+      const sourceIp = req.headers.get('x-forwarded-for') || 
+                      req.headers.get('x-real-ip') || 
+                      'unknown';
       const clientId = req.headers.get('x-forwarded-for') || 'unknown';
-      const validation = await validateRequest(apiKey, clientId);
+      
+      const validation = await validateRequest(apiKey, clientId, sourceIp);
       if (!validation.valid) {
         return new Response(JSON.stringify({ error: validation.error }), {
           status: 429,
@@ -75,8 +79,8 @@ serve(async (req) => {
         });
       }
       
-      // Track usage
-      await trackUsage(apiKey);
+      // Track usage with IP for security monitoring
+      await trackUsage(apiKey, sourceIp);
       
       // Sanitize guess data (normalize letters to uppercase)
       const sanitizedGuessData = guessData.map(tile => ({
