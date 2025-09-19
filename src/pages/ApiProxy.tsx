@@ -48,15 +48,25 @@ const ApiProxy = () => {
         // Handle the response
         const data = await response.text();
         
-        // For API requests, we need to return JSON directly
+        // For API requests, we need to return JSON directly with safe rendering
+        const preElement = document.createElement('pre');
+        preElement.style.cssText = 'white-space: pre-wrap; font-family: monospace; padding: 1rem; background: #f5f5f5; border-radius: 4px;';
+        
         if (response.ok) {
-          document.body.innerHTML = `<pre>${data}</pre>`;
+          preElement.textContent = data; // Safe - no XSS risk
         } else {
-          document.body.innerHTML = `<pre>Error: ${data}</pre>`;
+          preElement.textContent = `Error: ${data}`; // Safe - no XSS risk
         }
+        
+        document.body.innerHTML = ''; // Clear existing content
+        document.body.appendChild(preElement);
       } catch (error) {
         console.error('API request failed:', error);
-        document.body.innerHTML = `<pre>Error: ${error.message}</pre>`;
+        const preElement = document.createElement('pre');
+        preElement.style.cssText = 'white-space: pre-wrap; font-family: monospace; padding: 1rem; background: #f5f5f5; border-radius: 4px; color: #d32f2f;';
+        preElement.textContent = `Error: ${error.message}`;
+        document.body.innerHTML = '';
+        document.body.appendChild(preElement);
       }
     };
     
