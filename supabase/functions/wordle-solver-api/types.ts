@@ -3,6 +3,7 @@ export interface WordleAPIRequest {
   guessData: Array<{letter: string, state: 'correct' | 'present' | 'absent'}>;
   wordLength: number;
   excludedLetters?: string[];
+  positionExclusions?: Record<string, number[]>;
   apiKey?: string;
 }
 

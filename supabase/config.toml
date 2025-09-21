@@ -1,1 +1,4 @@
 project_id = "tctpfuqvpvkcdidyiowu"
+
+[functions.wordle-solver-api]
+verify_jwt = false

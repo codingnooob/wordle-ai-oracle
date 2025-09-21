@@ -29,6 +29,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     { letter: '', state: 'absent' }
   ]);
   const [excludedLetters, setExcludedLetters] = useState('');
+  const [positionExclusions, setPositionExclusions] = useState<Record<string, number[]>>({});
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
@@ -39,6 +40,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
       guessData[i] || { letter: '', state: 'absent' as const }
     );
     setGuessData(newGuessData);
+    setPositionExclusions({});
   };
 
   const updateGuessTile = (index: number, field: 'letter' | 'state', value: string) => {
@@ -67,7 +69,8 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
       const requestBody = {
         guessData: guessData.filter(tile => tile.letter.trim() !== ''),
         wordLength,
-        excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l)
+        excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l),
+        ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
       };
 
       const res = await fetch(`${baseUrl}`, {
@@ -108,6 +111,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const clearTest = () => {
     setGuessData(Array(wordLength).fill(null).map(() => ({ letter: '', state: 'absent' as const })));
     setExcludedLetters('');
+    setPositionExclusions({});
     setResponse(null);
   };
 
@@ -121,7 +125,36 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     ];
     setGuessData(exampleData);
     setExcludedLetters('T,I,S');
+    setPositionExclusions({ 'R': [1], 'A': [2] });
     setWordLength(5);
+  };
+
+  const handlePositionExclusionChange = (letter: string, position: number) => {
+    setPositionExclusions(prev => {
+      const current = prev[letter] || [];
+      const isExcluded = current.includes(position);
+      
+      if (isExcluded) {
+        const updated = current.filter(p => p !== position);
+        if (updated.length === 0) {
+          const { [letter]: removed, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [letter]: updated };
+      } else {
+        return { ...prev, [letter]: [...current, position] };
+      }
+    });
+  };
+
+  const getPresentLetters = () => {
+    const presentLetters = new Set<string>();
+    guessData.forEach(tile => {
+      if (tile.state === 'present' && tile.letter.trim()) {
+        presentLetters.add(tile.letter.toUpperCase());
+      }
+    });
+    return Array.from(presentLetters);
   };
 
   return (
@@ -190,9 +223,49 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
               id="excludedLetters"
               value={excludedLetters}
               onChange={(e) => setExcludedLetters(e.target.value)}
-              placeholder="T,I,S"
+              placeholder="Enter excluded letters here (e.g., T,I,S)"
             />
           </div>
+
+          {/* Position Exclusions */}
+          {getPresentLetters().length > 0 && (
+            <div className="space-y-3">
+              <Label>Position Exclusions for Present Letters</Label>
+              <p className="text-sm text-muted-foreground">
+                Click positions where these letters should NOT be placed (they're present but in wrong positions)
+              </p>
+              {getPresentLetters().map(letter => (
+                <div key={letter} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="w-8 h-8 flex items-center justify-center">
+                      {letter}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">Exclude from positions:</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: wordLength }, (_, i) => {
+                      const position = i;
+                      const isCurrentPosition = guessData[i]?.letter?.toUpperCase() === letter;
+                      const isExcluded = positionExclusions[letter]?.includes(position);
+                      
+                      return (
+                        <Button
+                          key={position}
+                          variant={isExcluded ? "default" : "outline"}
+                          size="sm"
+                          className="w-8 h-8 p-0"
+                          disabled={isCurrentPosition}
+                          onClick={() => handlePositionExclusionChange(letter, position)}
+                        >
+                          {position + 1}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div>
             <Label htmlFor="apiKey">API Key (optional)</Label>
