@@ -19,9 +19,9 @@ serve(async (req) => {
       // Handle status check endpoint
       if (req.method === 'GET' && path.includes('/status/')) {
         const pathParts = path.split('/status/')[1];
-        const [jobId, sessionToken] = pathParts.split('/');
+        const [jobId, encodedSessionToken] = pathParts.split('/');
         
-        if (!sessionToken) {
+        if (!encodedSessionToken) {
           return new Response(JSON.stringify({ error: 'Session token required' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -29,6 +29,10 @@ serve(async (req) => {
         }
         
         try {
+          // URL decode the session token to handle special characters
+          const sessionToken = decodeURIComponent(encodedSessionToken);
+          console.log(`Status check for job: ${jobId}, session token: ${sessionToken.substring(0, 10)}...`);
+          
           const jobStatus = await getJobStatus(jobId, sessionToken);
           
           if (!jobStatus) {
@@ -177,13 +181,18 @@ serve(async (req) => {
             })
         );
         
+        // Construct proper base URL for status endpoint
+        const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
+        const encodedSessionToken = encodeURIComponent(job.session_token);
+        
         return new Response(JSON.stringify({
           job_id: job.id,
           session_token: job.session_token,
           status: 'processing',
           message: 'Analysis started. Use the status endpoint to check progress.',
           estimated_completion_seconds: 15,
-          response_mode: 'async'
+          response_mode: 'async',
+          status_url: `${baseUrl}/status/${job.id}/${encodedSessionToken}`
         }), {
           status: 202,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -250,6 +259,10 @@ serve(async (req) => {
             })
         );
         
+        // Construct proper base URL for status endpoint
+        const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
+        const encodedSessionToken = encodeURIComponent(job.session_token);
+        
         return new Response(JSON.stringify({
           job_id: job.id,
           session_token: job.session_token,
@@ -257,7 +270,7 @@ serve(async (req) => {
           message: 'Analysis started, check status using the job_id and session_token',
           estimated_completion_seconds: 15,
           response_mode: 'async',
-          status_url: `${req.url}/status/${job.id}/${job.session_token}`
+          status_url: `${baseUrl}/status/${job.id}/${encodedSessionToken}`
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

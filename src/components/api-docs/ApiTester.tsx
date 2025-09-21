@@ -152,7 +152,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     }
 
     try {
-      const statusRes = await fetch(`${baseUrl}/status/${jobId}/${sessionToken}`);
+      // URL encode the session token to handle special characters
+      const encodedSessionToken = encodeURIComponent(sessionToken);
+      const statusRes = await fetch(`${baseUrl}/status/${jobId}/${encodedSessionToken}`);
       const statusData = await statusRes.json();
       
       if (statusData.status === 'complete' || statusData.status === 'failed' || statusData.status === 'partial') {
@@ -213,7 +215,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
 
     setLoading(true);
     try {
-      const statusRes = await fetch(`${baseUrl}/status/${demoJobId.trim()}/${demoSessionToken.trim()}`);
+      // URL encode the session token to handle special characters
+      const encodedSessionToken = encodeURIComponent(demoSessionToken.trim());
+      const statusRes = await fetch(`${baseUrl}/status/${demoJobId.trim()}/${encodedSessionToken}`);
       const statusData = await statusRes.json();
       setResponse({ status: statusRes.status, data: statusData });
       
@@ -461,7 +465,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
               <div className="text-xs text-blue-600 space-y-1">
                 <div><strong>Job ID:</strong> <code className="bg-blue-100 px-1 rounded">{pollingJobId}</code></div>
                 <div><strong>Session Token:</strong> <code className="bg-blue-100 px-1 rounded">{pollingToken}</code></div>
-                <div><strong>Status URL:</strong> <code className="bg-blue-100 px-1 rounded">{baseUrl}/status/{pollingJobId}/{pollingToken}</code></div>
+                <div><strong>Status URL:</strong> <code className="bg-blue-100 px-1 rounded">{baseUrl}/status/{pollingJobId}/{encodeURIComponent(pollingToken || '')}</code></div>
               </div>
             </div>
           )}
