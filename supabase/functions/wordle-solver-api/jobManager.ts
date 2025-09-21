@@ -46,25 +46,31 @@ export async function storeResults(jobId: string, solutions: any[], confidence: 
 }
 
 export async function getJobStatus(jobId: string, sessionToken: string) {
-  const { data: job, error: jobError } = await supabase
-    .from('analysis_jobs')
-    .select('*, analysis_results(*)')
-    .eq('id', jobId)
-    .eq('session_token', sessionToken)
-    .single();
-  
-  if (jobError || !job) {
+  try {
+    const { data: job, error: jobError } = await supabase
+      .rpc('get_job_status_secure', {
+        job_id_param: jobId,
+        session_token_param: sessionToken
+      });
+    
+    if (jobError || !job || job.length === 0) {
+      return null;
+    }
+    
+    const jobData = job[0];
+    return {
+      job_id: jobData.job_id,
+      status: jobData.status,
+      created_at: jobData.created_at,
+      completed_at: jobData.completed_at,
+      estimated_completion_seconds: jobData.estimated_completion_seconds,
+      solutions: jobData.solutions || [],
+      confidence_score: jobData.confidence_score || 0,
+      processing_status: jobData.processing_status || 'initializing',
+      error_message: jobData.error_message
+    };
+  } catch (error) {
+    console.error('Error fetching job status:', error);
     return null;
   }
-  
-  return {
-    job_id: job.id,
-    status: job.status,
-    created_at: job.created_at,
-    completed_at: job.completed_at,
-    estimated_completion_seconds: job.estimated_completion_seconds,
-    solutions: job.analysis_results?.[0]?.solutions || [],
-    confidence_score: job.analysis_results?.[0]?.confidence_score || 0,
-    processing_status: job.analysis_results?.[0]?.processing_status || 'initializing'
-  };
 }

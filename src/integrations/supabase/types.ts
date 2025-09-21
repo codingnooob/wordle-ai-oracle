@@ -187,6 +187,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_sensitive_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -199,6 +203,20 @@ export type Database = {
           time_period: string
           total_requests: number
           unique_keys: number
+        }[]
+      }
+      get_job_status_secure: {
+        Args: { job_id_param: string; session_token_param: string }
+        Returns: {
+          completed_at: string
+          confidence_score: number
+          created_at: string
+          error_message: string
+          estimated_completion_seconds: number
+          job_id: string
+          processing_status: string
+          solutions: Json
+          status: string
         }[]
       }
       get_security_events_summary: {
