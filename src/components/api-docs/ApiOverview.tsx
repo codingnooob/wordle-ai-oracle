@@ -46,16 +46,24 @@ const ApiOverview = ({ baseUrl }: ApiOverviewProps) => {
         </div>
 
         <div>
+          <h3 className="text-lg font-semibold mb-2">Features</h3>
+          <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+            <li>AI-powered word predictions based on guess patterns</li>
+            <li>Support for different word lengths (3-8 letters)</li>
+            <li>Advanced constraint handling (position exclusions, excluded letters)</li>
+            <li>Configurable response modes (immediate, async, auto)</li>
+            <li>Rate limiting and usage tracking</li>
+            <li>Asynchronous processing for complex analyses</li>
+            <li>RESTful API with JSON responses</li>
+          </ul>
+        </div>
+
+        <div>
           <h3 className="text-lg font-semibold mb-2">Response Modes</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="default">Immediate</Badge>
-              <span className="text-sm">Results returned immediately (within 10 seconds)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Async</Badge>
-              <span className="text-sm">Job ID returned for longer processing, check status separately</span>
-            </div>
+          <div className="text-sm space-y-2 text-muted-foreground">
+            <div><Badge variant="outline" className="mr-2">immediate</Badge>Forces synchronous processing. Returns results immediately or fails with timeout error.</div>
+            <div><Badge variant="outline" className="mr-2">async</Badge>Always processes in background and returns job ID for status polling.</div>
+            <div><Badge variant="outline" className="mr-2">auto</Badge>Default mode. Tries immediate processing, falls back to async if needed.</div>
           </div>
         </div>
       </CardContent>

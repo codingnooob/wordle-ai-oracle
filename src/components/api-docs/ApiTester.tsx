@@ -31,8 +31,11 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const [excludedLetters, setExcludedLetters] = useState('');
   const [positionExclusions, setPositionExclusions] = useState<Record<string, number[]>>({});
   const [apiKey, setApiKey] = useState('');
+  const [responseMode, setResponseMode] = useState<'immediate' | 'async' | 'auto'>('immediate');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
+  const [pollingJobId, setPollingJobId] = useState<string | null>(null);
+  const [pollingToken, setPollingToken] = useState<string | null>(null);
 
   const updateWordLength = (newLength: number) => {
     setWordLength(newLength);
@@ -70,6 +73,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         guessData: guessData.filter(tile => tile.letter.trim() !== ''),
         wordLength,
         excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l),
+        responseMode,
         ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
       };
 
@@ -83,10 +87,21 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
       setResponse({ status: res.status, data: result });
 
       if (res.ok) {
-        toast({
-          title: "API Test Successful",
-          description: `Received ${result.solutions?.length || 0} solutions`,
-        });
+        if (result.status === 'processing' && result.job_id && result.session_token) {
+          // Start polling for async results
+          setPollingJobId(result.job_id);
+          setPollingToken(result.session_token);
+          pollJobStatus(result.job_id, result.session_token);
+          toast({
+            title: "Analysis Started",
+            description: "Processing in background. Polling for results...",
+          });
+        } else {
+          toast({
+            title: "API Test Successful",
+            description: `Received ${result.solutions?.length || 0} solutions`,
+          });
+        }
       } else {
         toast({
           title: "API Test Failed",
@@ -108,11 +123,58 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     }
   };
 
+  const pollJobStatus = async (jobId: string, sessionToken: string, attempt = 0) => {
+    if (attempt > 30) { // Stop after 30 attempts (about 1.5 minutes)
+      toast({
+        title: "Polling Timeout",
+        description: "Analysis is taking longer than expected",
+        variant: "destructive"
+      });
+      setPollingJobId(null);
+      setPollingToken(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const statusRes = await fetch(`${baseUrl}/status/${jobId}/${sessionToken}`);
+      const statusData = await statusRes.json();
+      
+      if (statusData.status === 'complete' || statusData.status === 'failed') {
+        setResponse({ status: statusRes.status, data: statusData });
+        setPollingJobId(null);
+        setPollingToken(null);
+        setLoading(false);
+        
+        if (statusData.status === 'complete') {
+          toast({
+            title: "Analysis Complete",
+            description: `Received ${statusData.solutions?.length || 0} solutions`,
+          });
+        } else {
+          toast({
+            title: "Analysis Failed",
+            description: "Processing completed with errors",
+            variant: "destructive"
+          });
+        }
+      } else {
+        // Continue polling
+        setTimeout(() => pollJobStatus(jobId, sessionToken, attempt + 1), 3000);
+      }
+    } catch (error) {
+      console.error('Polling error:', error);
+      setTimeout(() => pollJobStatus(jobId, sessionToken, attempt + 1), 3000);
+    }
+  };
+
   const clearTest = () => {
     setGuessData(Array(wordLength).fill(null).map(() => ({ letter: '', state: 'absent' as const })));
     setExcludedLetters('');
     setPositionExclusions({});
     setResponse(null);
+    setPollingJobId(null);
+    setPollingToken(null);
   };
 
   const loadExample = () => {
@@ -268,6 +330,25 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
           )}
 
           <div>
+            <Label htmlFor="responseMode">Response Mode</Label>
+            <Select value={responseMode} onValueChange={(value: 'immediate' | 'async' | 'auto') => setResponseMode(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="immediate">✅ Immediate - Get results now or fail</SelectItem>
+                <SelectItem value="async">⏳ Async - Always use background processing</SelectItem>
+                <SelectItem value="auto">🔄 Auto - Try immediate, fallback to async</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {responseMode === 'immediate' && "Forces synchronous processing. Returns results immediately or timeout error."}
+              {responseMode === 'async' && "Always processes in background. Returns job ID for status polling."}
+              {responseMode === 'auto' && "Tries immediate processing first, falls back to async if needed."}
+            </p>
+          </div>
+
+          <div>
             <Label htmlFor="apiKey">API Key (optional)</Label>
             <Input
               id="apiKey"
@@ -282,7 +363,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Testing API...
+                {pollingJobId ? 'Polling for results...' : 'Testing API...'}
               </>
             ) : (
               <>

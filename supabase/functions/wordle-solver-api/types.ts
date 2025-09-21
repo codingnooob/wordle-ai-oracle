@@ -4,6 +4,7 @@ export interface WordleAPIRequest {
   wordLength: number;
   excludedLetters?: string[];
   positionExclusions?: Record<string, number[]>;
+  responseMode?: 'immediate' | 'async' | 'auto';
   apiKey?: string;
 }
 

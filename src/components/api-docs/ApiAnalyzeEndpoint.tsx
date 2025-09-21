@@ -30,7 +30,7 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Request Body</h3>
-          <ScrollArea className="w-full rounded border h-48">
+          <ScrollArea className="w-full rounded border h-64">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{
   "guessData": [
@@ -42,11 +42,25 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
   ],
   "wordLength": 5,
   "excludedLetters": ["T", "I", "S"],
-  "apiKey": "optional-api-key"
+  "positionExclusions": {
+    "R": [1], 
+    "A": [2]
+  },
+  "responseMode": "immediate",
+  "apiKey": "your-api-key-here"
 }`}
             </pre>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Response Mode (optional)</h3>
+          <div className="text-sm space-y-1">
+            <div><Badge variant="outline">immediate</Badge> - Force synchronous processing, return error if timeout</div>
+            <div><Badge variant="outline">async</Badge> - Always return job ID and process in background</div>
+            <div><Badge variant="outline">auto</Badge> - Try immediate, fallback to async (default)</div>
+          </div>
         </div>
 
         <div>
@@ -66,14 +80,16 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
-  "status": "complete",
+  "session_token": "abc123def456...",
   "solutions": [
     { "word": "AROSE", "probability": 85.2 },
     { "word": "ARGUE", "probability": 78.9 },
     { "word": "LARGE", "probability": 65.4 }
   ],
+  "status": "complete",
   "confidence_score": 0.95,
   "processing_status": "complete",
+  "response_mode": "immediate",
   "message": "Analysis completed immediately"
 }`}
             </pre>
@@ -88,10 +104,12 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{
   "job_id": "123e4567-e89b-12d3-a456-426614174000",
+  "session_token": "abc123def456ghi789jkl012mno345pqr678",
   "status": "processing",
-  "message": "Analysis started, check status using the job_id",
+  "message": "Analysis started, check status using the job_id and session_token",
   "estimated_completion_seconds": 15,
-  "status_url": "${baseUrl}/wordle-solver/status/123e..."
+  "response_mode": "async",
+  "status_url": "${baseUrl}/status/123e..."
 }`}
             </pre>
             <ScrollBar orientation="horizontal" />

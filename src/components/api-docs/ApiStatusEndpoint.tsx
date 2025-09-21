@@ -6,14 +6,15 @@ const ApiStatusEndpoint = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>GET /wordle-solver/status/{`{job_id}`}</CardTitle>
+        <CardTitle>GET /wordle-solver/status/{`{job_id}/{session_token}`}</CardTitle>
         <CardDescription>Check the status of an async analysis job</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold mb-2">URL Parameters</h3>
-          <div className="bg-slate-100 p-2 rounded text-sm">
-            <strong>job_id</strong> - UUID of the analysis job returned from the analyze endpoint
+          <div className="bg-slate-100 p-2 rounded text-sm space-y-1">
+            <div><strong>job_id</strong> - UUID of the analysis job returned from the analyze endpoint</div>
+            <div><strong>session_token</strong> - Session token returned from the analyze endpoint for authentication</div>
           </div>
         </div>
 

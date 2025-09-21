@@ -72,7 +72,7 @@ serve(async (req) => {
         });
       }
       
-      const { guessData, wordLength, excludedLetters, positionExclusions, apiKey } = requestBody;
+      const { guessData, wordLength, excludedLetters, positionExclusions, apiKey, responseMode = 'auto' } = requestBody;
       
       // Validate request and rate limiting
       const sourceIp = req.headers.get('x-forwarded-for') || 
@@ -105,7 +105,92 @@ serve(async (req) => {
         source_ip: sourceIp
       });
       
-      // Try immediate processing (with timeout)
+      // Handle different response modes
+      if (responseMode === 'immediate') {
+        // Force immediate processing only
+        try {
+          console.log('Starting immediate ML analysis...');
+          const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
+          const analysisResult = await Promise.race([
+            analysisPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout')), 8000))
+          ]) as any;
+
+          // Update job as complete
+          await updateJobStatus(
+            job.id, 
+            analysisResult.status === 'failed' ? 'failed' : 'complete',
+            new Date().toISOString()
+          );
+          
+          // Store results
+          await storeResults(job.id, analysisResult.solutions, analysisResult.confidence, 'complete');
+
+          return new Response(JSON.stringify({
+            job_id: job.id,
+            session_token: job.session_token,
+            solutions: analysisResult.solutions || [],
+            status: analysisResult.solutions?.length > 0 ? 'complete' : 'partial',
+            confidence: analysisResult.confidence || 0.95,
+            processing_status: 'complete',
+            response_mode: 'immediate'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Immediate analysis failed:', error);
+          return new Response(JSON.stringify({
+            error: 'Immediate processing failed. Analysis took too long or encountered an error.',
+            job_id: job.id,
+            session_token: job.session_token,
+            status: 'failed',
+            response_mode: 'immediate'
+          }), {
+            status: 408,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      if (responseMode === 'async') {
+        // Force async processing
+        console.log('Forcing async processing...');
+        EdgeRuntime.waitUntil(
+          performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {})
+            .then(async (result) => {
+              await updateJobStatus(
+                job.id, 
+                result.status === 'failed' ? 'failed' : 'complete',
+                new Date().toISOString()
+              );
+              
+              await storeResults(job.id, result.solutions, result.confidence, 'complete');
+            })
+            .catch(async (error) => {
+              console.error('Background processing failed:', error);
+              await updateJobStatus(
+                job.id, 
+                'failed',
+                new Date().toISOString(),
+                error.message
+              );
+            })
+        );
+        
+        return new Response(JSON.stringify({
+          job_id: job.id,
+          session_token: job.session_token,
+          status: 'processing',
+          message: 'Analysis started. Use the status endpoint to check progress.',
+          estimated_completion_seconds: 15,
+          response_mode: 'async'
+        }), {
+          status: 202,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Default 'auto' mode: Try immediate, fallback to async
       try {
         const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
         const timeoutPromise = new Promise((_, reject) => 
@@ -132,6 +217,7 @@ serve(async (req) => {
           solutions: result.solutions,
           confidence_score: result.confidence,
           processing_status: 'complete',
+          response_mode: 'immediate',
           message: 'Analysis completed immediately'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -170,6 +256,7 @@ serve(async (req) => {
           status: 'processing',
           message: 'Analysis started, check status using the job_id and session_token',
           estimated_completion_seconds: 15,
+          response_mode: 'async',
           status_url: `${req.url}/status/${job.id}/${job.session_token}`
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
