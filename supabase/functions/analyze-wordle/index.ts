@@ -1,8 +1,29 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Types (copied from the website's constraint types)
+interface GuessData {
+  letter: string;
+  state: 'unknown' | 'absent' | 'present' | 'correct';
+}
+
+interface WordConstraints {
+  correctPositions: Map<number, string>;
+  presentLetters: Set<string>;
+  absentLetters: Set<string>;
+  positionExclusions: Map<number, Set<string>>;
+  letterCounts: Map<string, { min: number; max?: number }>;
+}
+
+interface GuessHistory {
+  guess: GuessData[];
+  timestamp: number;
+}
 
 // Enhanced security headers
 const corsHeaders = {
@@ -45,7 +66,7 @@ function sanitizeInput(input: any): { isValid: boolean; data?: any; error?: stri
     return { isValid: false, error: 'Invalid request format' };
   }
   
-  const { guessData, wordLength, positionExclusions } = input;
+  const { guessData, wordLength, excludedLetters, positionExclusions } = input;
   
   // Validate wordLength
   if (typeof wordLength !== 'number' || wordLength < 3 || wordLength > 15) {
@@ -72,6 +93,19 @@ function sanitizeInput(input: any): { isValid: boolean; data?: any; error?: stri
     return { letter, state };
   });
   
+  // Sanitize excluded letters
+  const sanitizedExcludedLetters: string[] = [];
+  if (Array.isArray(excludedLetters)) {
+    excludedLetters.forEach((letter: any) => {
+      if (typeof letter === 'string') {
+        const cleanLetter = letter.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 1);
+        if (cleanLetter && !sanitizedExcludedLetters.includes(cleanLetter)) {
+          sanitizedExcludedLetters.push(cleanLetter);
+        }
+      }
+    });
+  }
+  
   // Sanitize position exclusions
   const sanitizedPositionExclusions: Record<string, number[]> = {};
   if (input.positionExclusions && typeof input.positionExclusions === 'object') {
@@ -89,15 +123,13 @@ function sanitizeInput(input: any): { isValid: boolean; data?: any; error?: stri
 
   return { 
     isValid: true, 
-    data: { guessData: sanitizedGuessData, wordLength, positionExclusions: sanitizedPositionExclusions } 
+    data: { 
+      guessData: sanitizedGuessData, 
+      wordLength, 
+      excludedLetters: sanitizedExcludedLetters,
+      positionExclusions: sanitizedPositionExclusions 
+    } 
   };
-}
-
-function secureLog(message: string, data?: any): void {
-  const isDev = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
-  if (isDev) {
-    console.log(message, data);
-  }
 }
 
 serve(async (req) => {
@@ -134,148 +166,402 @@ serve(async (req) => {
       });
     }
 
-    const { guessData, wordLength, positionExclusions } = validation.data;
+    const { guessData, wordLength, excludedLetters = [], positionExclusions = {} } = validation.data;
 
-    // Build constraint description for AI (with sanitized inputs)
-    const constraints = guessData
-      .map((tile: any, index: number) => {
-        if (!tile.letter) return null;
-        switch (tile.state) {
-          case 'correct':
-            return `Position ${index + 1}: '${tile.letter}' (correct position)`;
-          case 'present':
-            return `'${tile.letter}' is in the word but not at position ${index + 1}`;
-          case 'absent':
-            return `'${tile.letter}' is not in the word`;
-          default:
-            return null;
-        }
-      })
-      .filter(Boolean);
-
-    // Add position exclusion constraints
-    if (positionExclusions) {
-      Object.entries(positionExclusions).forEach(([letter, positions]) => {
-        if (positions.length > 0) {
-          const positionList = positions.map(p => p + 1).join(', ');
-          constraints.push(`'${letter}' must not be at position${positions.length > 1 ? 's' : ''} ${positionList}`);
-        }
-      });
-    }
-
-    const constraintString = constraints.join('; ');
-
-    // Enhanced prompt with stronger constraint enforcement
-    const prompt = `You are an expert Wordle solver AI. You MUST suggest only words that STRICTLY follow ALL given constraints for a ${wordLength}-letter word.
-
-CRITICAL RULES:
-- If a letter is marked as "correct position", it MUST be in that exact position
-- If a letter is marked as "present", it MUST be in the word BUT NOT in the guessed position
-- If a letter is marked as "absent", it MUST NOT appear anywhere in the word
-- If position exclusions are specified, those letters MUST NOT appear in those positions
-
-Constraints: ${constraintString}
-
-VALIDATION: Before suggesting any word, verify it follows ALL constraints. Words that violate ANY constraint are INVALID.
-
-Respond with a JSON array of objects containing "word" (uppercase) and "probability" (0-100). Focus on common English words that PERFECTLY satisfy all constraints.
-
-Format: [{"word": "HOUSE", "probability": 85}, {"word": "MOUSE", "probability": 72}]
-
-Only return the JSON array, no other text.`;
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
-        messages: [
-          { role: 'system', content: 'You are a Wordle puzzle solver that analyzes letter constraints and suggests valid English words.' },
-          { role: 'user', content: prompt }
-        ],
-        max_completion_tokens: 1000,
-      }),
+    secureLog('Processing sophisticated ML analysis request:', {
+      wordLength,
+      guessDataLength: guessData.length,
+      excludedLettersCount: excludedLetters.length,
+      positionExclusionsCount: Object.keys(positionExclusions).length
     });
 
-    const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
-
-    // Parse AI response with enhanced security and validation
-    let solutions;
-    try {
-      solutions = JSON.parse(aiResponse);
-      
-      if (!Array.isArray(solutions)) {
-        throw new Error('Invalid response format');
-      }
-      
-      // Validate and clean the solutions with security checks
-      solutions = solutions
-        .filter((sol: any) => sol.word && typeof sol.probability === 'number')
-        .slice(0, 15) // Limit results
-        .map((sol: any) => ({
-          word: sol.word.toString().toUpperCase().replace(/[^A-Z]/g, '').substring(0, 15),
-          probability: Math.min(95, Math.max(5, Number(sol.probability) || 50))
-        }))
-        .filter((sol: any) => sol.word.length >= 3 && sol.word.length <= 15); // Final validation
-
-      // Client-side constraint validation to filter out invalid suggestions
-      solutions = solutions.filter((sol: any) => {
-        const word = sol.word;
-        if (word.length !== wordLength) return false;
-        
-        // Check each constraint
-        for (let i = 0; i < guessData.length; i++) {
-          const tile = guessData[i];
-          if (!tile.letter) continue;
-          
-          const letter = tile.letter.toUpperCase();
-          const wordLetter = word[i];
-          
-          switch (tile.state) {
-            case 'correct':
-              if (wordLetter !== letter) return false;
-              break;
-            case 'present':
-              if (!word.includes(letter) || wordLetter === letter) return false;
-              break;
-            case 'absent':
-              if (word.includes(letter)) return false;
-              break;
-          }
-        }
-        
-        // Check position exclusions
-        if (positionExclusions) {
-          for (const [letter, positions] of Object.entries(positionExclusions)) {
-            for (const pos of positions) {
-              if (word[pos] === letter) return false;
+    // Use the same sophisticated constraint analysis as the website
+    const guessHistory = [{ guess: guessData, timestamp: Date.now() }];
+    const constraints = analyzeConstraints(guessHistory);
+    
+    // Merge manual position exclusions with constraint-derived exclusions
+    if (positionExclusions) {
+      for (const [letter, positions] of Object.entries(positionExclusions)) {
+        if (Array.isArray(positions)) {
+          for (const position of positions) {
+            if (!constraints.positionExclusions.has(position)) {
+              constraints.positionExclusions.set(position, new Set());
             }
+            constraints.positionExclusions.get(position)!.add(letter.toUpperCase());
           }
         }
-        
-        return true;
-      });
-        
-    } catch (parseError) {
-      secureLog('Failed to parse AI response:', parseError);
-      solutions = [];
+      }
     }
+
+    // Add excluded letters to absent letters set
+    for (const letter of excludedLetters) {
+      if (letter) {
+        constraints.absentLetters.add(letter.toUpperCase());
+      }
+    }
+
+    secureLog('Generated constraints:', {
+      correctPositions: Array.from(constraints.correctPositions.entries()),
+      presentLetters: Array.from(constraints.presentLetters),
+      absentLetters: Array.from(constraints.absentLetters),
+      positionExclusions: Array.from(constraints.positionExclusions.entries()).map(([pos, letters]) => [pos, Array.from(letters)])
+    });
+
+    // Find potential matches using the same logic as the website
+    const candidateWords = await findPotentialMatches(constraints, wordLength);
+    
+    secureLog(`Found ${candidateWords.length} candidate words`);
+
+    if (candidateWords.length === 0) {
+      secureLog('No candidate words found matching constraints');
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Filter words that satisfy all constraints and calculate scores
+    const validWords = candidateWords.filter(wordData => {
+      const word = wordData.word;
+      return validateWordAgainstConstraints(word, constraints) && 
+             !constraints.absentLetters.has(word);
+    });
+
+    secureLog(`${validWords.length} words passed constraint validation`);
+
+    // Calculate sophisticated ML scores for each valid word
+    const scoredSolutions = validWords.map(wordData => {
+      const score = calculateWordScore(wordData.word, constraints, wordData.frequency);
+      return {
+        word: wordData.word,
+        probability: Math.round(score * 100) // Convert to percentage
+      };
+    });
+
+    // Sort by probability and take top results
+    const solutions = scoredSolutions
+      .sort((a, b) => b.probability - a.probability)
+      .slice(0, 10); // Return top 10 results
+
+    secureLog('ML analysis complete:', {
+      solutionsFound: solutions.length,
+      topSolutions: solutions.slice(0, 3).map(s => `${s.word}: ${s.probability}%`)
+    });
 
     return new Response(JSON.stringify(solutions), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-    
+
   } catch (error) {
     secureLog('Error in analyze-wordle function:', error);
     
-    // Return generic error message for security
-    return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+    return new Response(JSON.stringify({ error: 'Server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+// Sophisticated constraint analysis functions (copied from website)
+function analyzeConstraints(guessHistory: GuessHistory[]): WordConstraints {
+  const constraints: WordConstraints = {
+    correctPositions: new Map(),
+    presentLetters: new Set(),
+    absentLetters: new Set(),
+    positionExclusions: new Map(),
+    letterCounts: new Map()
+  };
+
+  for (const history of guessHistory) {
+    const duplicateLetterAnalysis = analyzeDuplicateLettersInGuess(history.guess);
+    applyConstraintsFromAnalysis(constraints, duplicateLetterAnalysis, history.guess);
+  }
+
+  return constraints;
+}
+
+interface LetterAnalysis {
+  letter: string;
+  positions: Array<{
+    index: number;
+    state: 'correct' | 'present' | 'absent';
+  }>;
+  exactCount?: number;
+  hasConflict: boolean;
+}
+
+function analyzeDuplicateLettersInGuess(guess: Array<{letter: string, state: string}>): Map<string, LetterAnalysis> {
+  const letterAnalysis = new Map<string, LetterAnalysis>();
+
+  // Group tiles by letter
+  for (let i = 0; i < guess.length; i++) {
+    const tile = guess[i];
+    if (!tile.letter) continue;
+
+    const letter = tile.letter.toUpperCase();
+    const state = tile.state as 'correct' | 'present' | 'absent';
+
+    if (!letterAnalysis.has(letter)) {
+      letterAnalysis.set(letter, {
+        letter,
+        positions: [],
+        hasConflict: false
+      });
+    }
+
+    letterAnalysis.get(letter)!.positions.push({
+      index: i,
+      state
+    });
+  }
+
+  // Determine exact counts for letters with mixed states
+  for (const [letter, analysis] of letterAnalysis) {
+    const states = analysis.positions.map(p => p.state);
+    const hasCorrect = states.includes('correct');
+    const hasPresent = states.includes('present');
+    const hasAbsent = states.includes('absent');
+
+    if (hasAbsent && (hasCorrect || hasPresent)) {
+      const nonAbsentCount = states.filter(s => s !== 'absent').length;
+      analysis.exactCount = nonAbsentCount;
+      analysis.hasConflict = true;
+    } else if (hasCorrect || hasPresent) {
+      const nonAbsentCount = states.filter(s => s !== 'absent').length;
+      analysis.exactCount = nonAbsentCount;
+    }
+  }
+
+  return letterAnalysis;
+}
+
+function applyConstraintsFromAnalysis(
+  constraints: WordConstraints, 
+  analysis: Map<string, LetterAnalysis>,
+  guess: Array<{letter: string, state: string}>
+): void {
+  
+  for (const [letter, letterAnalysis] of analysis) {
+    for (const position of letterAnalysis.positions) {
+      switch (position.state) {
+        case 'correct':
+          constraints.correctPositions.set(position.index, letter);
+          constraints.presentLetters.add(letter);
+          break;
+          
+        case 'present':
+          constraints.presentLetters.add(letter);
+          if (!constraints.positionExclusions.has(position.index)) {
+            constraints.positionExclusions.set(position.index, new Set());
+          }
+          constraints.positionExclusions.get(position.index)!.add(letter);
+          break;
+          
+        case 'absent':
+          const hasNonAbsentInThisGuess = letterAnalysis.positions.some(p => p.state !== 'absent');
+          if (!hasNonAbsentInThisGuess) {
+            constraints.absentLetters.add(letter);
+          }
+          break;
+      }
+    }
+
+    if (letterAnalysis.exactCount !== undefined) {
+      if (letterAnalysis.hasConflict) {
+        constraints.letterCounts.set(letter, {
+          min: letterAnalysis.exactCount,
+          max: letterAnalysis.exactCount
+        });
+      } else {
+        const existingConstraint = constraints.letterCounts.get(letter);
+        const newMin = Math.max(letterAnalysis.exactCount, existingConstraint?.min || 0);
+        constraints.letterCounts.set(letter, {
+          min: newMin,
+          max: existingConstraint?.max
+        });
+      }
+    }
+  }
+}
+
+async function findPotentialMatches(constraints: WordConstraints, wordLength: number): Promise<Array<{ word: string; frequency: number }>> {
+  // Try to get words from web scraper API first
+  try {
+    const { data, error } = await supabase.functions.invoke('web-scraper');
+    if (!error && data && Array.isArray(data)) {
+      const scrapedWords = data
+        .filter((item: any) => typeof item === 'string' && item.length === wordLength)
+        .map((word: string) => ({ word: word.toUpperCase(), frequency: 50 }));
+      
+      if (scrapedWords.length > 0) {
+        secureLog(`Using ${scrapedWords.length} words from web scraper`);
+        return scrapedWords.slice(0, 1000); // Limit for performance
+      }
+    }
+  } catch (error) {
+    secureLog('Web scraper failed, using fallback word list:', error);
+  }
+
+  // Fallback to common words based on length
+  const fallbackWords = getFallbackWords(wordLength);
+  return fallbackWords;
+}
+
+function getFallbackWords(wordLength: number): Array<{ word: string; frequency: number }> {
+  const wordLists: { [key: number]: Array<{ word: string; frequency: number }> } = {
+    3: [
+      { word: 'THE', frequency: 100 }, { word: 'AND', frequency: 95 }, { word: 'FOR', frequency: 90 },
+      { word: 'ARE', frequency: 85 }, { word: 'BUT', frequency: 80 }, { word: 'NOT', frequency: 78 }
+    ],
+    4: [
+      { word: 'THAT', frequency: 100 }, { word: 'WITH', frequency: 95 }, { word: 'HAVE', frequency: 90 },
+      { word: 'THIS', frequency: 88 }, { word: 'WILL', frequency: 85 }, { word: 'YOUR', frequency: 83 }
+    ],
+    5: [
+      { word: 'ARISE', frequency: 100 }, { word: 'SLATE', frequency: 95 }, { word: 'CRANE', frequency: 90 },
+      { word: 'HOUSE', frequency: 88 }, { word: 'MOUSE', frequency: 85 }, { word: 'PLACE', frequency: 83 },
+      { word: 'SPACE', frequency: 80 }, { word: 'GRACE', frequency: 78 }, { word: 'TRACE', frequency: 75 },
+      { word: 'PRICE', frequency: 73 }, { word: 'PRIME', frequency: 70 }, { word: 'CLEAR', frequency: 68 },
+      { word: 'LEARN', frequency: 65 }, { word: 'HEART', frequency: 63 }, { word: 'SMART', frequency: 60 }
+    ],
+    6: [
+      { word: 'SHOULD', frequency: 100 }, { word: 'AROUND', frequency: 95 }, { word: 'LITTLE', frequency: 90 },
+      { word: 'PEOPLE', frequency: 88 }, { word: 'BEFORE', frequency: 85 }, { word: 'MOTHER', frequency: 83 }
+    ],
+    7: [
+      { word: 'THROUGH', frequency: 100 }, { word: 'BETWEEN', frequency: 95 }, { word: 'ANOTHER', frequency: 90 },
+      { word: 'WITHOUT', frequency: 88 }, { word: 'BECAUSE', frequency: 85 }, { word: 'AGAINST', frequency: 83 }
+    ]
+  };
+
+  return wordLists[wordLength] || [];
+}
+
+function validateWordAgainstConstraints(word: string, constraints: WordConstraints): boolean {
+  const wordUpper = word.toUpperCase();
+  
+  // Check correct positions
+  for (const [position, letter] of constraints.correctPositions) {
+    if (wordUpper[position] !== letter) return false;
+  }
+  
+  // Check present letters
+  for (const letter of constraints.presentLetters) {
+    if (!wordUpper.includes(letter)) return false;
+  }
+  
+  // Check position exclusions
+  for (const [position, excludedLetters] of constraints.positionExclusions) {
+    const letterAtPosition = wordUpper[position];
+    if (excludedLetters.has(letterAtPosition)) return false;
+  }
+  
+  // Check absent letters
+  for (const letter of constraints.absentLetters) {
+    if (wordUpper.includes(letter)) return false;
+  }
+  
+  // Check letter counts
+  for (const [letter, countConstraint] of constraints.letterCounts) {
+    const letterCount = (wordUpper.match(new RegExp(letter, 'g')) || []).length;
+    if (letterCount < countConstraint.min) return false;
+    if (countConstraint.max !== undefined && letterCount > countConstraint.max) return false;
+  }
+  
+  return true;
+}
+
+function calculateWordScore(word: string, constraints: WordConstraints, baseFrequency: number): number {
+  let probability = 0.1; // Base 10% probability
+  
+  // Constraint fitness is the primary factor
+  const constraintFitness = calculateConstraintFitness(word, constraints);
+  probability += constraintFitness * 0.6; // Up to 60% boost
+  
+  // Frequency contribution
+  const frequencyBonus = Math.log(baseFrequency + 1) / Math.log(10000);
+  probability += Math.min(0.2, frequencyBonus); // Up to 20% boost
+  
+  // Word quality factors
+  const qualityBonus = calculateWordQuality(word);
+  probability += qualityBonus * 0.1; // Up to 10% boost
+  
+  return Math.max(0.01, Math.min(0.99, probability));
+}
+
+function calculateConstraintFitness(word: string, constraints: WordConstraints): number {
+  let fitness = 0;
+  
+  // Perfect position matches
+  let correctMatches = 0;
+  for (const [position, letter] of constraints.correctPositions) {
+    if (word.toUpperCase()[position] === letter) {
+      correctMatches++;
+    }
+  }
+  if (constraints.correctPositions.size > 0) {
+    fitness += (correctMatches / constraints.correctPositions.size) * 0.7;
+  }
+  
+  // Present letters in valid positions
+  let presentMatches = 0;
+  for (const letter of constraints.presentLetters) {
+    if (word.toUpperCase().includes(letter)) {
+      let validPlacement = false;
+      for (let i = 0; i < word.length; i++) {
+        if (word.toUpperCase()[i] === letter) {
+          const excludedAtPosition = constraints.positionExclusions.get(i);
+          if (!excludedAtPosition || !excludedAtPosition.has(letter)) {
+            validPlacement = true;
+            break;
+          }
+        }
+      }
+      if (validPlacement) presentMatches++;
+    }
+  }
+  if (constraints.presentLetters.size > 0) {
+    fitness += (presentMatches / constraints.presentLetters.size) * 0.5;
+  }
+  
+  // Bonus for not containing absent letters
+  fitness += 0.3;
+  
+  return Math.min(1.0, fitness);
+}
+
+function calculateWordQuality(word: string): number {
+  let quality = 0.3; // Base quality
+  
+  // Vowel distribution bonus
+  const vowels = 'AEIOU';
+  const vowelCount = word.split('').filter(letter => vowels.includes(letter.toUpperCase())).length;
+  if (vowelCount >= 1 && vowelCount <= 3) {
+    quality += 0.3;
+  }
+  
+  // Letter diversity bonus
+  const uniqueLetters = new Set(word.toUpperCase().split('')).size;
+  if (uniqueLetters >= 4) {
+    quality += 0.2;
+  }
+  
+  // Common letter patterns
+  const commonLetters = 'ETAOINSHRDLU';
+  let patternScore = 0;
+  for (const letter of word.toUpperCase()) {
+    const frequency = commonLetters.indexOf(letter);
+    if (frequency !== -1) {
+      patternScore += (commonLetters.length - frequency) / (commonLetters.length * word.length);
+    }
+  }
+  quality += patternScore * 0.2;
+  
+  return Math.min(1.0, quality);
+}
+
+function secureLog(message: string, data?: any): void {
+  const isDev = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
+  if (isDev) {
+    console.log(message, data || '');
+  }
+}
