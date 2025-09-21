@@ -165,12 +165,22 @@ serve(async (req) => {
 
     const constraintString = constraints.join('; ');
 
-    const prompt = `You are a Wordle solver AI. Given the following constraints for a ${wordLength}-letter word, suggest the 10 most likely English words that fit these constraints:
+    // Enhanced prompt with stronger constraint enforcement
+    const prompt = `You are an expert Wordle solver AI. You MUST suggest only words that STRICTLY follow ALL given constraints for a ${wordLength}-letter word.
+
+CRITICAL RULES:
+- If a letter is marked as "correct position", it MUST be in that exact position
+- If a letter is marked as "present", it MUST be in the word BUT NOT in the guessed position
+- If a letter is marked as "absent", it MUST NOT appear anywhere in the word
+- If position exclusions are specified, those letters MUST NOT appear in those positions
 
 Constraints: ${constraintString}
 
-Respond with a JSON array of objects, each containing "word" (uppercase) and "probability" (0-100 representing confidence). Focus on common English words. Example format:
-[{"word": "HOUSE", "probability": 85}, {"word": "MOUSE", "probability": 72}]
+VALIDATION: Before suggesting any word, verify it follows ALL constraints. Words that violate ANY constraint are INVALID.
+
+Respond with a JSON array of objects containing "word" (uppercase) and "probability" (0-100). Focus on common English words that PERFECTLY satisfy all constraints.
+
+Format: [{"word": "HOUSE", "probability": 85}, {"word": "MOUSE", "probability": 72}]
 
 Only return the JSON array, no other text.`;
 
@@ -181,20 +191,19 @@ Only return the JSON array, no other text.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           { role: 'system', content: 'You are a Wordle puzzle solver that analyzes letter constraints and suggests valid English words.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3,
-        max_tokens: 1000,
+        max_completion_tokens: 1000,
       }),
     });
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
 
-    // Parse AI response with enhanced security
+    // Parse AI response with enhanced security and validation
     let solutions;
     try {
       solutions = JSON.parse(aiResponse);
@@ -212,6 +221,44 @@ Only return the JSON array, no other text.`;
           probability: Math.min(95, Math.max(5, Number(sol.probability) || 50))
         }))
         .filter((sol: any) => sol.word.length >= 3 && sol.word.length <= 15); // Final validation
+
+      // Client-side constraint validation to filter out invalid suggestions
+      solutions = solutions.filter((sol: any) => {
+        const word = sol.word;
+        if (word.length !== wordLength) return false;
+        
+        // Check each constraint
+        for (let i = 0; i < guessData.length; i++) {
+          const tile = guessData[i];
+          if (!tile.letter) continue;
+          
+          const letter = tile.letter.toUpperCase();
+          const wordLetter = word[i];
+          
+          switch (tile.state) {
+            case 'correct':
+              if (wordLetter !== letter) return false;
+              break;
+            case 'present':
+              if (!word.includes(letter) || wordLetter === letter) return false;
+              break;
+            case 'absent':
+              if (word.includes(letter)) return false;
+              break;
+          }
+        }
+        
+        // Check position exclusions
+        if (positionExclusions) {
+          for (const [letter, positions] of Object.entries(positionExclusions)) {
+            for (const pos of positions) {
+              if (word[pos] === letter) return false;
+            }
+          }
+        }
+        
+        return true;
+      });
         
     } catch (parseError) {
       secureLog('Failed to parse AI response:', parseError);
