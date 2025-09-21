@@ -178,6 +178,33 @@ export type Database = {
         }
         Relationships: []
       }
+      system_config: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -230,6 +257,10 @@ export type Database = {
           source_ip_status: string
           user_agent_status: string
         }[]
+      }
+      get_system_config: {
+        Args: { config_key: string }
+        Returns: Json
       }
       log_security_event: {
         Args: {
