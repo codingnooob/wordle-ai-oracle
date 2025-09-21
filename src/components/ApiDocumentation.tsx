@@ -4,22 +4,12 @@ import ApiOverview from './api-docs/ApiOverview';
 import ApiAnalyzeEndpoint from './api-docs/ApiAnalyzeEndpoint';
 import ApiStatusEndpoint from './api-docs/ApiStatusEndpoint';
 import ApiExamples from './api-docs/ApiExamples';
+import ApiTester from './api-docs/ApiTester';
 
 const ApiDocumentation = () => {
-  // Prioritize production domain, fallback to current origin for development
+  // Always use the direct Supabase Edge Function URL
   const getBaseUrl = () => {
-    if (typeof window === 'undefined') return 'https://wordlesolver.ai/api';
-    
-    const currentOrigin = window.location.origin;
-    
-    // If we're on the production domain or any custom domain (not localhost or lovable project)
-    if (currentOrigin.includes('wordlesolver.ai') || 
-        (!currentOrigin.includes('localhost') && !currentOrigin.includes('lovableproject.com'))) {
-      return 'https://wordlesolver.ai/api';
-    }
-    
-    // For development environments (localhost, lovable project URLs)
-    return `${currentOrigin}/api`;
+    return 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
   };
 
   const baseUrl = getBaseUrl();
@@ -32,11 +22,12 @@ const ApiDocumentation = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analyze">Analyze</TabsTrigger>
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="examples">Examples</TabsTrigger>
+          <TabsTrigger value="tester">Live Test</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -53,6 +44,10 @@ const ApiDocumentation = () => {
 
         <TabsContent value="examples">
           <ApiExamples baseUrl={baseUrl} />
+        </TabsContent>
+
+        <TabsContent value="tester">
+          <ApiTester baseUrl={baseUrl} />
         </TabsContent>
       </Tabs>
     </div>
