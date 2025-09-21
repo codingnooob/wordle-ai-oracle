@@ -6,7 +6,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = []): Promise<AnalysisResult> {
+export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}): Promise<AnalysisResult> {
   // Simulate ML processing time
   const processingTime = Math.random() * 2000 + 1000; // 1-3 seconds
   await new Promise(resolve => setTimeout(resolve, processingTime));
@@ -14,7 +14,7 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
   // Call the existing analyze-wordle function
   try {
     const { data, error } = await supabase.functions.invoke('analyze-wordle', {
-      body: { guessData, wordLength, excludedLetters }
+      body: { guessData, wordLength, excludedLetters, positionExclusions }
     });
     
     if (error) throw error;

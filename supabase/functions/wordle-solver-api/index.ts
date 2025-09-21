@@ -72,7 +72,7 @@ serve(async (req) => {
         });
       }
       
-      const { guessData, wordLength, excludedLetters, apiKey } = requestBody;
+      const { guessData, wordLength, excludedLetters, positionExclusions, apiKey } = requestBody;
       
       // Validate request and rate limiting
       const sourceIp = req.headers.get('x-forwarded-for') || 
@@ -107,7 +107,7 @@ serve(async (req) => {
       
       // Try immediate processing (with timeout)
       try {
-        const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || []);
+        const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('timeout')), 10000)
         );
@@ -143,7 +143,7 @@ serve(async (req) => {
         
         // Schedule background processing
         EdgeRuntime.waitUntil(
-          performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [])
+          performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {})
             .then(async (result) => {
               await updateJobStatus(
                 job.id, 

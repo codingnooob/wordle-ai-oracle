@@ -45,7 +45,7 @@ function sanitizeInput(input: any): { isValid: boolean; data?: any; error?: stri
     return { isValid: false, error: 'Invalid request format' };
   }
   
-  const { guessData, wordLength } = input;
+  const { guessData, wordLength, positionExclusions } = input;
   
   // Validate wordLength
   if (typeof wordLength !== 'number' || wordLength < 3 || wordLength > 15) {
@@ -72,9 +72,24 @@ function sanitizeInput(input: any): { isValid: boolean; data?: any; error?: stri
     return { letter, state };
   });
   
+  // Sanitize position exclusions
+  const sanitizedPositionExclusions: Record<string, number[]> = {};
+  if (input.positionExclusions && typeof input.positionExclusions === 'object') {
+    Object.entries(input.positionExclusions).forEach(([letter, positions]) => {
+      if (typeof letter === 'string' && Array.isArray(positions)) {
+        const cleanLetter = letter.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 1);
+        if (cleanLetter) {
+          sanitizedPositionExclusions[cleanLetter] = positions
+            .filter(pos => typeof pos === 'number' && pos >= 0 && pos < wordLength)
+            .slice(0, wordLength);
+        }
+      }
+    });
+  }
+
   return { 
     isValid: true, 
-    data: { guessData: sanitizedGuessData, wordLength } 
+    data: { guessData: sanitizedGuessData, wordLength, positionExclusions: sanitizedPositionExclusions } 
   };
 }
 
@@ -119,7 +134,7 @@ serve(async (req) => {
       });
     }
 
-    const { guessData, wordLength } = validation.data;
+    const { guessData, wordLength, positionExclusions } = validation.data;
 
     // Build constraint description for AI (with sanitized inputs)
     const constraints = guessData
@@ -136,12 +151,23 @@ serve(async (req) => {
             return null;
         }
       })
-      .filter(Boolean)
-      .join('; ');
+      .filter(Boolean);
+
+    // Add position exclusion constraints
+    if (positionExclusions) {
+      Object.entries(positionExclusions).forEach(([letter, positions]) => {
+        if (positions.length > 0) {
+          const positionList = positions.map(p => p + 1).join(', ');
+          constraints.push(`'${letter}' must not be at position${positions.length > 1 ? 's' : ''} ${positionList}`);
+        }
+      });
+    }
+
+    const constraintString = constraints.join('; ');
 
     const prompt = `You are a Wordle solver AI. Given the following constraints for a ${wordLength}-letter word, suggest the 10 most likely English words that fit these constraints:
 
-Constraints: ${constraints}
+Constraints: ${constraintString}
 
 Respond with a JSON array of objects, each containing "word" (uppercase) and "probability" (0-100 representing confidence). Focus on common English words. Example format:
 [{"word": "HOUSE", "probability": 85}, {"word": "MOUSE", "probability": 72}]

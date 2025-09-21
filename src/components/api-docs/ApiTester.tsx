@@ -302,11 +302,11 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
               </Badge>
             </div>
             
-            <ScrollArea className="max-h-96 w-full rounded border">
-              <pre className="bg-slate-50 p-4 text-sm whitespace-pre-wrap">
+            <div className="max-h-96 w-full rounded border overflow-auto">
+              <pre className="bg-slate-50 p-4 text-sm whitespace-pre-wrap font-mono">
                 {JSON.stringify(response.data, null, 2)}
               </pre>
-            </ScrollArea>
+            </div>
           </div>
         )}
       </CardContent>
