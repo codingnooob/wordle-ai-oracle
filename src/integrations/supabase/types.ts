@@ -232,6 +232,17 @@ export type Database = {
           unique_keys: number
         }[]
       }
+      get_job_status_public: {
+        Args: { job_id_param: string }
+        Returns: {
+          completed_at: string
+          created_at: string
+          error_message: string
+          estimated_completion_seconds: number
+          job_id: string
+          status: string
+        }[]
+      }
       get_job_status_secure: {
         Args: { job_id_param: string; session_token_param: string }
         Returns: {
@@ -261,6 +272,10 @@ export type Database = {
       get_system_config: {
         Args: { config_key: string }
         Returns: Json
+      }
+      job_exists_secure: {
+        Args: { job_id_param: string }
+        Returns: boolean
       }
       log_security_event: {
         Args: {
