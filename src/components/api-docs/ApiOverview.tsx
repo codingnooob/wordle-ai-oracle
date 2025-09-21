@@ -66,6 +66,59 @@ const ApiOverview = ({ baseUrl }: ApiOverviewProps) => {
             <div><Badge variant="outline" className="mr-2">auto</Badge>Default mode. Tries immediate processing, falls back to async if needed.</div>
           </div>
         </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Complete Workflow</h3>
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 p-4 rounded space-y-3">
+            <h4 className="font-medium text-blue-800">Async Processing Workflow:</h4>
+            <div className="text-sm text-blue-700 space-y-2">
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary" className="shrink-0 mt-0.5">1</Badge>
+                <div>
+                  <strong>Send Analysis Request</strong> with <code>responseMode: "async"</code><br/>
+                  <span className="text-xs text-blue-600">Receive <code>job_id</code> and <code>session_token</code> immediately</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary" className="shrink-0 mt-0.5">2</Badge>
+                <div>
+                  <strong>Poll Status Endpoint</strong> using both tokens<br/>
+                  <span className="text-xs text-blue-600">GET <code>/status/{`{job_id}/{session_token}`}</code> every 3-5 seconds</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary" className="shrink-0 mt-0.5">3</Badge>
+                <div>
+                  <strong>Receive Results</strong> when status becomes <code>complete</code><br/>
+                  <span className="text-xs text-blue-600">Stop polling and process the solutions array</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-blue-200 pt-3">
+              <h4 className="font-medium text-blue-800 mb-2">Best Practices:</h4>
+              <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
+                <li>Poll every 3-5 seconds to balance responsiveness and server load</li>
+                <li>Set a maximum poll count (e.g., 30 attempts = ~2.5 minutes)</li>
+                <li>Always use both <code>job_id</code> and <code>session_token</code> for security</li>
+                <li>Handle <code>partial</code> status as a successful result with limited data</li>
+                <li>Use <code>immediate</code> mode for simple analyses, <code>auto</code> for flexibility</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Timing & Performance</h3>
+          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm">
+            <div className="space-y-1 text-yellow-800">
+              <div><strong>Immediate mode:</strong> 1-5 seconds (or timeout error)</div>
+              <div><strong>Async mode:</strong> 5-30 seconds typical processing time</div>
+              <div><strong>Auto mode:</strong> Tries immediate first, falls back if needed</div>
+              <div><strong>Rate limits:</strong> 100 requests/hour per API key or IP</div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

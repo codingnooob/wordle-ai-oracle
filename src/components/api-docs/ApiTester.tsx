@@ -36,6 +36,11 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const [response, setResponse] = useState<any>(null);
   const [pollingJobId, setPollingJobId] = useState<string | null>(null);
   const [pollingToken, setPollingToken] = useState<string | null>(null);
+  const [pollingAttempt, setPollingAttempt] = useState(0);
+  const [pollingMaxAttempts] = useState(30);
+  const [showStatusDemo, setShowStatusDemo] = useState(false);
+  const [demoJobId, setDemoJobId] = useState('');
+  const [demoSessionToken, setDemoSessionToken] = useState('');
 
   const updateWordLength = (newLength: number) => {
     setWordLength(newLength);
@@ -91,15 +96,22 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
           // Start polling for async results
           setPollingJobId(result.job_id);
           setPollingToken(result.session_token);
+          setPollingAttempt(0);
           pollJobStatus(result.job_id, result.session_token);
           toast({
-            title: "Analysis Started",
+            title: `Analysis Started (${responseMode} mode)`, 
             description: "Processing in background. Polling for results...",
+          });
+        } else if (result.solutions) {
+          // Immediate response
+          toast({
+            title: `Analysis Complete (${responseMode} mode)`,
+            description: `Received ${result.solutions?.length || 0} solutions immediately`,
           });
         } else {
           toast({
             title: "API Test Successful",
-            description: `Received ${result.solutions?.length || 0} solutions`,
+            description: `Response received in ${responseMode} mode`,
           });
         }
       } else {
@@ -124,7 +136,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   };
 
   const pollJobStatus = async (jobId: string, sessionToken: string, attempt = 0) => {
-    if (attempt > 30) { // Stop after 30 attempts (about 1.5 minutes)
+    setPollingAttempt(attempt);
+    
+    if (attempt > pollingMaxAttempts) {
       toast({
         title: "Polling Timeout",
         description: "Analysis is taking longer than expected",
@@ -132,6 +146,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
       });
       setPollingJobId(null);
       setPollingToken(null);
+      setPollingAttempt(0);
       setLoading(false);
       return;
     }
@@ -140,16 +155,23 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
       const statusRes = await fetch(`${baseUrl}/status/${jobId}/${sessionToken}`);
       const statusData = await statusRes.json();
       
-      if (statusData.status === 'complete' || statusData.status === 'failed') {
+      if (statusData.status === 'complete' || statusData.status === 'failed' || statusData.status === 'partial') {
         setResponse({ status: statusRes.status, data: statusData });
         setPollingJobId(null);
         setPollingToken(null);
+        setPollingAttempt(0);
         setLoading(false);
         
         if (statusData.status === 'complete') {
           toast({
             title: "Analysis Complete",
-            description: `Received ${statusData.solutions?.length || 0} solutions`,
+            description: `Received ${statusData.solutions?.length || 0} solutions after ${attempt + 1} attempts`,
+          });
+        } else if (statusData.status === 'partial') {
+          toast({
+            title: "Analysis Partial",
+            description: "Processing completed with limited results",
+            variant: "default"
           });
         } else {
           toast({
@@ -168,6 +190,50 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     }
   };
 
+  const stopPolling = () => {
+    setPollingJobId(null);
+    setPollingToken(null);
+    setPollingAttempt(0);
+    setLoading(false);
+    toast({
+      title: "Polling Stopped",
+      description: "Stopped checking for results",
+    });
+  };
+
+  const testStatusCheck = async () => {
+    if (!demoJobId.trim() || !demoSessionToken.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both job ID and session token",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const statusRes = await fetch(`${baseUrl}/status/${demoJobId.trim()}/${demoSessionToken.trim()}`);
+      const statusData = await statusRes.json();
+      setResponse({ status: statusRes.status, data: statusData });
+      
+      toast({
+        title: "Status Check Complete",
+        description: `Status: ${statusData.status || 'unknown'}`,
+      });
+    } catch (error) {
+      console.error('Status check error:', error);
+      setResponse({ status: 'error', data: { error: 'Failed to check status' } });
+      toast({
+        title: "Status Check Failed",
+        description: "Failed to retrieve job status",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearTest = () => {
     setGuessData(Array(wordLength).fill(null).map(() => ({ letter: '', state: 'absent' as const })));
     setExcludedLetters('');
@@ -175,6 +241,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     setResponse(null);
     setPollingJobId(null);
     setPollingToken(null);
+    setPollingAttempt(0);
+    setDemoJobId('');
+    setDemoSessionToken('');
   };
 
   const loadExample = () => {
@@ -359,19 +428,99 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
             />
           </div>
 
-          <Button onClick={testApi} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {pollingJobId ? 'Polling for results...' : 'Testing API...'}
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Test API
-              </>
+          <div className="flex gap-2">
+            <Button onClick={testApi} disabled={loading} className="flex-1">
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {pollingJobId ? `Polling (${pollingAttempt}/${pollingMaxAttempts})...` : 'Testing API...'}
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Test API
+                </>
+              )}
+            </Button>
+            
+            {pollingJobId && (
+              <Button variant="outline" onClick={stopPolling} className="shrink-0">
+                Stop Polling
+              </Button>
             )}
-          </Button>
+          </div>
+
+          {pollingJobId && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-blue-800">Background Processing</span>
+                <Badge variant="outline" className="text-blue-700">
+                  Attempt {pollingAttempt + 1}/{pollingMaxAttempts}
+                </Badge>
+              </div>
+              <div className="text-xs text-blue-600 space-y-1">
+                <div><strong>Job ID:</strong> <code className="bg-blue-100 px-1 rounded">{pollingJobId}</code></div>
+                <div><strong>Session Token:</strong> <code className="bg-blue-100 px-1 rounded">{pollingToken}</code></div>
+                <div><strong>Status URL:</strong> <code className="bg-blue-100 px-1 rounded">{baseUrl}/status/{pollingJobId}/{pollingToken}</code></div>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="font-semibold">Status Check Demo</h3>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowStatusDemo(!showStatusDemo)}
+              >
+                {showStatusDemo ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+            
+            {showStatusDemo && (
+              <div className="space-y-3 bg-slate-50 p-3 rounded">
+                <p className="text-sm text-muted-foreground">
+                  Test the status endpoint directly with a job ID and session token from a previous async request.
+                </p>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  <div>
+                    <Label htmlFor="demoJobId">Job ID</Label>
+                    <Input
+                      id="demoJobId"
+                      value={demoJobId}
+                      onChange={(e) => setDemoJobId(e.target.value)}
+                      placeholder="123e4567-e89b-12d3-a456-426614174000"
+                      className="font-mono text-xs"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="demoSessionToken">Session Token</Label>
+                    <Input
+                      id="demoSessionToken"
+                      value={demoSessionToken}
+                      onChange={(e) => setDemoSessionToken(e.target.value)}
+                      placeholder="abc123xyz789"
+                      className="font-mono text-xs"
+                    />
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  <strong>Generated URL:</strong><br/>
+                  <code className="bg-white p-1 rounded border">
+                    {baseUrl}/status/{demoJobId || '{job_id}'}/{demoSessionToken || '{session_token}'}
+                  </code>
+                </div>
+                
+                <Button onClick={testStatusCheck} disabled={loading} size="sm" className="w-full">
+                  Check Status
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {response && (
