@@ -12,22 +12,16 @@
   ],
   "routes": [
     {
+      "src": "/api/wordle-solver/status/(.*)",
+      "dest": "/api/wordle-solver/status/[...params]"
+    },
+    {
+      "src": "/api/wordle-solver",
+      "dest": "/api/wordle-solver/index"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://wordle-ai-oracle.vercel.app/$1",
-      "permanent": true,
-      "has": [
-        {
-          "type": "header",
-          "key": "x-forwarded-proto",
-          "value": "http"
-        }
-      ]
     }
   ],
   "env": {
