@@ -369,6 +369,10 @@ export type Database = {
           user_agent_status: string
         }[]
       }
+      get_security_headers: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_system_config: {
         Args: { config_key: string }
         Returns: Json
