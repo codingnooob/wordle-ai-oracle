@@ -413,21 +413,6 @@ function performAnalysisWithWordList(words: string[], guessData: any[], wordLeng
     console.error('Core analysis failed:', error);
     return createFallbackResult('Analysis logic failed');
   }
-    
-  } catch (error) {
-    console.error('ML Analysis failed with detailed error:', error);
-    
-    // Provide specific error information for debugging
-    const errorMessage = error.message || 'Unknown error';
-    console.error('Error details:', {
-      message: errorMessage,
-      stack: error.stack,
-      type: error.constructor.name
-    });
-    
-    // Return fallback result with error information
-    return createFallbackResult(errorMessage);
-  }
 }
 
 // Fallback analysis function for when primary analysis fails
