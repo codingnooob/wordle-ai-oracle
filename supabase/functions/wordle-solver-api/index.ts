@@ -187,6 +187,22 @@ serve(async (req) => {
           source_ip: sourceIp,
           clientFingerprint: fingerprint
         });
+
+        // Create hashed session token for enhanced security
+        if (job) {
+          try {
+            await supabase.rpc('create_hashed_session_token', {
+              token_param: job.session_token,
+              job_id_param: job.id
+            });
+            secureLog('Hashed session token created', { jobId: job.id }, 'info');
+          } catch (tokenError) {
+            secureLog('Failed to create hashed session token', { 
+              jobId: job.id,
+              error: getSafeErrorMessage(tokenError as Error, 'create_hashed_session_token')
+            }, 'warn');
+          }
+        }
         
         secureLog('Job created', { jobId: job.id, responseMode }, 'info');
         

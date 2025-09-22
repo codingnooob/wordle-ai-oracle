@@ -25,47 +25,70 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log('Starting security cleanup...');
+    console.log('Starting enhanced security cleanup...');
     const startTime = Date.now();
     
-    // Call cleanup functions
-    const results = await Promise.allSettled([
+    // Execute cleanup operations concurrently for better performance
+    const cleanupResults = await Promise.allSettled([
       supabase.rpc('cleanup_expired_sessions'),
       supabase.rpc('cleanup_api_usage_data'),
-      supabase.rpc('cleanup_sensitive_data')
+      supabase.rpc('cleanup_sensitive_data'),
+      supabase.rpc('cleanup_expired_tokens') // Add new token cleanup
     ]);
     
     const completedTime = Date.now() - startTime;
     
-    // Log results
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    const failureCount = results.filter(r => r.status === 'rejected').length;
+    // Count successful and failed operations
+    const successCount = cleanupResults.filter(result => result.status === 'fulfilled').length;
+    const failureCount = cleanupResults.filter(result => result.status === 'rejected').length;
     
+    // Log cleanup results with enhanced details
+    const failedOperations = cleanupResults
+      .map((result, index) => ({ 
+        result, 
+        operation: ['sessions', 'api_usage', 'sensitive_data', 'expired_tokens'][index] 
+      }))
+      .filter(({ result }) => result.status === 'rejected')
+      .map(({ result, operation }) => ({
+        operation,
+        error: result.status === 'rejected' ? 
+          (result.reason instanceof Error ? result.reason.message : String(result.reason)) : 
+          'Unknown error'
+      }));
+
     if (failureCount > 0) {
-      console.error('Some cleanup operations failed:', results.filter(r => r.status === 'rejected'));
+      console.error('Some cleanup operations failed:', failedOperations);
     }
     
-    console.log(`Security cleanup completed: ${successCount} succeeded, ${failureCount} failed, took ${completedTime}ms`);
+    console.log(`Enhanced security cleanup completed: ${successCount} succeeded, ${failureCount} failed, took ${completedTime}ms`);
     
-    // Log security event
+    // Enhanced logging with more security details
     await supabase.rpc('log_security_event', {
-      p_event_type: 'automated_cleanup_cycle',
+      p_event_type: 'security_cleanup_cycle',
+      p_source_ip: null,
+      p_user_agent: 'system/cleanup-service',
+      p_api_key_hash: null,
       p_endpoint: 'security-cleanup',
       p_severity: failureCount > 0 ? 'warn' : 'info',
       p_details: {
-        success_count: successCount,
-        failure_count: failureCount,
+        successful_operations: successCount,
+        failed_operations: failureCount,
+        failures: failedOperations,
+        cleanup_types: ['sessions', 'api_usage', 'sensitive_data', 'expired_tokens'],
         duration_ms: completedTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        version: '2.0'
       }
     });
     
     return new Response(JSON.stringify({
       success: true,
-      message: 'Security cleanup completed',
-      stats: {
-        operations_completed: successCount,
-        operations_failed: failureCount,
+      message: 'Enhanced security cleanup completed',
+      results: {
+        successful: successCount,
+        failed: failureCount,
+        details: failedOperations,
+        operations: ['sessions', 'api_usage', 'sensitive_data', 'expired_tokens'],
         duration_ms: completedTime
       }
     }), {

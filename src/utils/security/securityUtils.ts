@@ -109,6 +109,25 @@ export class SecurityUtils {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
+  // Enhanced session token generation with better entropy
+  static generateSecureSessionToken(): string {
+    // Generate 64 bytes of random data for higher entropy
+    const array = new Uint8Array(64);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array))
+      .replace(/[+/]/g, '_')
+      .replace(/=+$/, '');
+  }
+
+  // Hash session token for secure storage
+  static async hashSessionToken(token: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(token);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = new Uint8Array(hashBuffer);
+    return Array.from(hashArray, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
   // Enhanced input validation patterns
   static validateEmail(email: string): boolean {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

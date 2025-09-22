@@ -30,20 +30,57 @@ export class SecurityMiddleware {
     isValid: boolean;
     error?: string;
     fingerprint?: string;
+    clientId?: string;
   } {
     try {
       const url = new URL(request.url);
       const clientIP = request.headers.get('cf-connecting-ip') || 
-                      request.headers.get('x-forwarded-for') || 
+                      request.headers.get('x-forwarded-for')?.split(',')[0] || 
                       request.headers.get('x-real-ip') || 
                       'unknown';
       
-      // Rate limiting
+      // Enhanced client identification
+      const clientId = request.headers.get('x-client-id') || clientIP;
+      
+      // Rate limiting with enhanced tracking
       if (options.enableRateLimit && this.rateLimiter) {
-        if (!this.rateLimiter(clientIP)) {
+        if (!this.rateLimiter(clientId)) {
           SecurityLogger.logRateLimit(url.pathname, 0);
-          return { isValid: false, error: 'Rate limit exceeded' };
+          return { isValid: false, error: 'Rate limit exceeded', clientId };
         }
+      }
+      
+      // Enhanced request validation
+      const userAgent = request.headers.get('user-agent');
+      if (!userAgent || userAgent.length < 10) {
+        SecurityLogger.logValidationFailure('user-agent', userAgent, 'Invalid or missing user-agent');
+        return { isValid: false, error: 'Invalid request headers' };
+      }
+
+      // Validate user agent against suspicious patterns
+      const suspiciousPatterns = [
+        /bot/i, /crawl/i, /spider/i, /scrape/i
+      ];
+      if (suspiciousPatterns.some(pattern => pattern.test(userAgent))) {
+        SecurityLogger.logSecurityEvent('warn', 'Suspicious user agent detected', { 
+          userAgent: userAgent.substring(0, 100),
+          clientId: clientId.substring(0, 8) + '***'
+        });
+      }
+      
+      // Content-Type validation for POST requests
+      if (request.method === 'POST') {
+        const contentType = request.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          SecurityLogger.logValidationFailure('content-type', contentType, 'Invalid content type for POST request');
+          return { isValid: false, error: 'Invalid content type' };
+        }
+      }
+
+      // Request size validation
+      const contentLength = request.headers.get('content-length');
+      if (contentLength && parseInt(contentLength) > 50000) { // 50KB limit
+        return { isValid: false, error: 'Request too large' };
       }
       
       // Request fingerprinting
@@ -52,30 +89,14 @@ export class SecurityMiddleware {
         fingerprint = SecurityUtils.generateRequestFingerprint(request);
       }
       
-      // Basic security validations
-      const userAgent = request.headers.get('user-agent');
-      if (!userAgent || userAgent.length < 10) {
-        SecurityLogger.logValidationFailure('user-agent', userAgent, 'Invalid or missing user-agent');
-        return { isValid: false, error: 'Invalid request headers' };
-      }
-      
-      // Validate content type for POST requests
-      if (request.method === 'POST') {
-        const contentType = request.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          SecurityLogger.logValidationFailure('content-type', contentType, 'Invalid content type for POST request');
-          return { isValid: false, error: 'Invalid content type' };
-        }
-      }
-      
       SecurityLogger.logSecurityEvent('info', 'Request validation passed', {
         method: request.method,
         path: url.pathname,
-        clientIP,
+        clientIP: clientIP.substring(0, 8) + '***',
         fingerprint
       });
       
-      return { isValid: true, fingerprint };
+      return { isValid: true, fingerprint, clientId };
       
     } catch (error) {
       SecurityLogger.logSecurityEvent('error', 'Request validation error', error);
