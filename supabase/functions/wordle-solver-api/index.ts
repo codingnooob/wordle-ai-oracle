@@ -238,29 +238,42 @@ serve(async (req) => {
 
         if (responseMode === 'async') {
           secureLog('Starting async processing', { jobId: job.id }, 'info');
-          Deno.serveHttp.waitUntil?.(
-            performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {})
-              .then(async (result) => {
-                await updateJobStatus(
-                  job.id, 
-                  result.status === 'failed' ? 'failed' : 'complete',
-                  new Date().toISOString()
-                );
-                
-                await storeResults(job.id, result.solutions, result.confidence, 'complete');
-                secureLog('Async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
-              })
-              .catch(async (error) => {
-                const safeError = getSafeErrorMessage(error, 'Async Analysis');
-                secureLog('Async analysis failed', { jobId: job.id, error: safeError }, 'error');
-                await updateJobStatus(
-                  job.id, 
-                  'failed',
-                  new Date().toISOString(),
-                  safeError
-                );
-              })
-          );
+          
+          // Use modern EdgeRuntime.waitUntil for background processing
+          const backgroundTask = async () => {
+            try {
+              secureLog('Background task started', { jobId: job.id }, 'info');
+              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
+              
+              await updateJobStatus(
+                job.id, 
+                result.status === 'failed' ? 'failed' : 'complete',
+                new Date().toISOString()
+              );
+              
+              await storeResults(job.id, result.solutions, result.confidence, 'complete');
+              secureLog('Async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
+            } catch (error) {
+              const safeError = getSafeErrorMessage(error, 'Async Analysis');
+              secureLog('Async analysis failed', { jobId: job.id, error: safeError }, 'error');
+              await updateJobStatus(
+                job.id, 
+                'failed',
+                new Date().toISOString(),
+                safeError
+              );
+            }
+          };
+          
+          // Execute background task
+          if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+            EdgeRuntime.waitUntil(backgroundTask());
+          } else {
+            // Fallback for environments without EdgeRuntime
+            backgroundTask().catch((error) => {
+              secureLog('Background task fallback failed', { jobId: job.id, error: error.message }, 'error');
+            });
+          }
           
           const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
           const encodedSessionToken = encodeURIComponent(job.session_token);
@@ -313,29 +326,41 @@ serve(async (req) => {
         } catch (error) {
           secureLog('Auto mode falling back to async', { jobId: job.id }, 'info');
           
-          Deno.serveHttp.waitUntil?.(
-            performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {})
-              .then(async (result) => {
-                await updateJobStatus(
-                  job.id, 
-                  result.status === 'failed' ? 'failed' : 'complete',
-                  new Date().toISOString()
-                );
-                
-                await storeResults(job.id, result.solutions, result.confidence, 'complete');
-                secureLog('Auto mode async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
-              })
-              .catch(async (error) => {
-                const safeError = getSafeErrorMessage(error, 'Auto Mode Async Analysis');
-                secureLog('Auto mode async analysis failed', { jobId: job.id, error: safeError }, 'error');
-                await updateJobStatus(
-                  job.id, 
-                  'failed',
-                  new Date().toISOString(),
-                  safeError
-                );
-              })
-          );
+          // Use modern EdgeRuntime.waitUntil for background processing
+          const backgroundTask = async () => {
+            try {
+              secureLog('Auto mode background task started', { jobId: job.id }, 'info');
+              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
+              
+              await updateJobStatus(
+                job.id, 
+                result.status === 'failed' ? 'failed' : 'complete',
+                new Date().toISOString()
+              );
+              
+              await storeResults(job.id, result.solutions, result.confidence, 'complete');
+              secureLog('Auto mode async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
+            } catch (error) {
+              const safeError = getSafeErrorMessage(error, 'Auto Mode Async Analysis');
+              secureLog('Auto mode async analysis failed', { jobId: job.id, error: safeError }, 'error');
+              await updateJobStatus(
+                job.id, 
+                'failed',
+                new Date().toISOString(),
+                safeError
+              );
+            }
+          };
+          
+          // Execute background task
+          if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+            EdgeRuntime.waitUntil(backgroundTask());
+          } else {
+            // Fallback for environments without EdgeRuntime
+            backgroundTask().catch((error) => {
+              secureLog('Auto mode background task fallback failed', { jobId: job.id, error: error.message }, 'error');
+            });
+          }
           
           const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
           const encodedSessionToken = encodeURIComponent(job.session_token);
