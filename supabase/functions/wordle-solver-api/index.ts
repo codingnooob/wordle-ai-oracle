@@ -224,24 +224,42 @@ serve(async (req) => {
             const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
             const analysisResult = await Promise.race([
               analysisPromise,
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout')), 8000))
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout after 8 seconds')), 8000))
             ]) as any;
 
-            await updateJobStatus(
+            // Validate result object structure before accessing properties
+            if (!analysisResult || typeof analysisResult !== 'object' || analysisResult instanceof Error) {
+              throw new Error('Invalid analysis result structure or timeout occurred');
+            }
+
+            // Safely access properties with fallback values
+            const solutions = analysisResult.solutions || [];
+            const status = analysisResult.status || 'partial';
+            const confidence = analysisResult.confidence || 0.0;
+
+            const statusUpdate = await updateJobStatus(
               job.id, 
-              analysisResult.status === 'failed' ? 'failed' : 'complete',
+              status === 'failed' ? 'failed' : 'complete',
               new Date().toISOString()
             );
             
-            await storeResults(job.id, analysisResult.solutions, analysisResult.confidence, 'complete');
-            secureLog('Immediate analysis completed', { jobId: job.id, solutionCount: analysisResult.solutions?.length || 0 }, 'info');
+            const resultsStorage = await storeResults(job.id, solutions, confidence, 'complete');
+            
+            // Log failures but don't crash the request
+            if (!statusUpdate.success) {
+              secureLog('Failed to update job status in immediate mode', { jobId: job.id, error: statusUpdate.error }, 'error');
+            }
+            if (!resultsStorage.success) {
+              secureLog('Failed to store results in immediate mode', { jobId: job.id, error: resultsStorage.error }, 'error');
+            }
+            secureLog('Immediate analysis completed', { jobId: job.id, solutionCount: solutions.length }, 'info');
 
             return new Response(JSON.stringify({
               job_id: job.id,
               session_token: job.session_token,
-              solutions: analysisResult.solutions || [],
-              status: analysisResult.solutions?.length > 0 ? 'complete' : 'partial',
-              confidence: analysisResult.confidence || 0.95,
+              solutions: solutions,
+              status: solutions.length > 0 ? 'complete' : 'partial',
+              confidence: confidence,
               processing_status: 'complete',
               response_mode: 'immediate'
             }), {
@@ -272,14 +290,32 @@ serve(async (req) => {
               secureLog('Background task started', { jobId: job.id }, 'info');
               const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
               
-              await updateJobStatus(
+              // Validate result object structure before accessing properties
+              if (!result || typeof result !== 'object' || result instanceof Error) {
+                throw new Error('Invalid analysis result structure');
+              }
+
+              // Safely access properties with fallback values
+              const solutions = result.solutions || [];
+              const status = result.status || 'partial';
+              const confidence = result.confidence || 0.0;
+              
+              const statusUpdate = await updateJobStatus(
                 job.id, 
-                result.status === 'failed' ? 'failed' : 'complete',
+                status === 'failed' ? 'failed' : 'complete',
                 new Date().toISOString()
               );
               
-              await storeResults(job.id, result.solutions, result.confidence, 'complete');
-              secureLog('Async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
+              const resultsStorage = await storeResults(job.id, solutions, confidence, 'complete');
+              
+              // Log failures but don't crash background processing
+              if (!statusUpdate.success) {
+                secureLog('Failed to update job status in async mode', { jobId: job.id, error: statusUpdate.error }, 'error');
+              }
+              if (!resultsStorage.success) {
+                secureLog('Failed to store results in async mode', { jobId: job.id, error: resultsStorage.error }, 'error');
+              }
+              secureLog('Async analysis completed', { jobId: job.id, solutionCount: solutions.length }, 'info');
             } catch (error) {
               const safeError = getSafeErrorMessage(error, 'Async Analysis');
               secureLog('Async analysis failed', { jobId: job.id, error: safeError }, 'error');
@@ -390,13 +426,23 @@ serve(async (req) => {
               secureLog('Auto mode background task started', { jobId: job.id }, 'info');
               const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
               
+              // Validate result object structure before accessing properties
+              if (!result || typeof result !== 'object' || result instanceof Error) {
+                throw new Error('Invalid analysis result structure');
+              }
+
+              // Safely access properties with fallback values
+              const solutions = result.solutions || [];
+              const status = result.status || 'partial';
+              const confidence = result.confidence || 0.0;
+              
               const statusUpdate = await updateJobStatus(
                 job.id, 
-                result.status === 'failed' ? 'failed' : 'complete',
+                status === 'failed' ? 'failed' : 'complete',
                 new Date().toISOString()
               );
               
-              const resultsStorage = await storeResults(job.id, result.solutions, result.confidence, 'complete');
+              const resultsStorage = await storeResults(job.id, solutions, confidence, 'complete');
               
               // Log failures but continue background processing
               if (!statusUpdate.success) {
@@ -405,7 +451,7 @@ serve(async (req) => {
               if (!resultsStorage.success) {
                 secureLog('Failed to store results in background task', { jobId: job.id, error: resultsStorage.error }, 'error');
               }
-              secureLog('Auto mode async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
+              secureLog('Auto mode async analysis completed', { jobId: job.id, solutionCount: solutions.length }, 'info');
             } catch (error) {
               const safeError = getSafeErrorMessage(error, 'Auto Mode Async Analysis');
               secureLog('Auto mode async analysis failed', { jobId: job.id, error: safeError }, 'error');
