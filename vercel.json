@@ -10,20 +10,6 @@
       }
     }
   ],
-  "routes": [
-    {
-      "src": "/api/wordle-solver/status/(.*)",
-      "dest": "/api/wordle-solver/status"
-    },
-    {
-      "src": "/api/wordle-solver",
-      "dest": "/api/wordle-solver"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "env": {
     "NODE_ENV": "production"
   },
@@ -79,6 +65,10 @@
     {
       "source": "/api/wordle-solver",
       "destination": "/api/wordle-solver"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
     }
   ]
 }
