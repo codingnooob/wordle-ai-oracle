@@ -589,8 +589,14 @@ serve(async (req) => {
       } catch (error) {
         const safeError = getSafeErrorMessage(error, 'API Handler');
         secureLog('Unhandled API error', { error: safeError }, 'error');
-        return new Response(JSON.stringify({ error: 'Internal server error' }), {
-          status: 500,
+        
+        // Return a more helpful error response instead of generic 500
+        return new Response(JSON.stringify({ 
+          error: 'Analysis temporarily unavailable',
+          message: 'The Wordle solver is experiencing issues. Please try again in a moment.',
+          fallback_suggestions: ['AROSE', 'ADIEU', 'AUDIO', 'ORATE', 'RATIO']
+        }), {
+          status: 503, // Service Unavailable instead of 500
           headers: { ...secureHeaders, 'Content-Type': 'application/json' }
         });
       }
@@ -605,8 +611,14 @@ serve(async (req) => {
     const safeError = getSafeErrorMessage(error, 'Request Handler');
     secureLog('Critical API error', { error: safeError }, 'error');
     
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
+    // Top-level error boundary - always return a usable response
+    return new Response(JSON.stringify({ 
+      error: 'Service temporarily unavailable',
+      message: 'The Wordle solver encountered an unexpected error. Please try again.',
+      fallback_suggestions: ['AROSE', 'ADIEU', 'AUDIO', 'ORATE', 'RATIO'],
+      status_code: 503
+    }), {
+      status: 503, // Service Unavailable instead of 500
       headers: { 
         ...corsHeaders,
         'Content-Type': 'application/json'
