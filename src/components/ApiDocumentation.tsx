@@ -16,7 +16,7 @@ const ApiDocumentation = () => {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-slate-800">Wordle AI Oracle API</h1>
-        <p className="text-slate-600">REST API for Wordle puzzle solving with ML-powered predictions</p>
+        <p className="text-slate-600">REST API for Wordle puzzle solving with ML-powered predictions (Currently in Development)</p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">

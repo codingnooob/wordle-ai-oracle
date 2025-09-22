@@ -15,6 +15,26 @@ const ApiOverview = ({ baseUrl }: ApiOverviewProps) => {
           The Wordle AI Oracle API provides ML-powered Wordle puzzle solving capabilities
         </CardDescription>
       </CardHeader>
+      
+      {/* Work In Progress Warning */}
+      <div className="mx-6 mb-6 p-4 border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-950/20 rounded-r-lg">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-2">
+              Work In Progress
+            </h3>
+            <p className="text-orange-700 dark:text-orange-300 text-sm leading-relaxed">
+              This API is currently under active development. While the service is operational, 
+              results may be incorrect or incomplete. Do not use in production environments. 
+              Check back regularly for updates as we continue improving the accuracy and reliability.
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <CardContent className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold mb-2">Base URL</h3>
