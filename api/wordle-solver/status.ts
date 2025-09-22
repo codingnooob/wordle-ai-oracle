@@ -3,6 +3,10 @@ export const runtime = 'edge';
 const SUPABASE_FUNCTION_URL = 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
 
 export default async function handler(request: Request): Promise<Response> {
+  // Debug logging
+  console.log(`[API DEBUG] Status API called: ${request.method} ${request.url}`);
+  console.log(`[API DEBUG] Headers:`, Object.fromEntries(request.headers.entries()));
+  
   // Set CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
