@@ -85,11 +85,17 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
       };
 
+      console.log('[API Test] Sending request to:', apiConfig.analyze);
+      console.log('[API Test] Request body:', requestBody);
+
       const res = await fetch(apiConfig.analyze, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
       });
+
+      console.log('[API Test] Response status:', res.status);
+      console.log('[API Test] Response headers:', Object.fromEntries(res.headers.entries()));
 
       // Check if response is empty or not JSON
       const responseText = await res.text();
