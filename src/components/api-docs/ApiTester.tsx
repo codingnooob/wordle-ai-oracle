@@ -140,12 +140,63 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         });
       }
     } catch (error) {
-      console.error('API test error:', error);
+      console.error('[API Test] Primary API failed:', error);
+      
+      // Fallback: Try direct Supabase URL if custom domain API fails
+      const currentConfig = getApiConfig();
+      const isUsingCustomApi = !currentConfig.analyze.includes('supabase.co');
+      
+      if (isUsingCustomApi) {
+        console.log('[API Test] Attempting fallback to direct Supabase...');
+        try {
+          const fallbackUrl = 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
+          const requestBody = {
+            guessData: guessData.filter(tile => tile.letter.trim() !== ''),
+            wordLength,
+            excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l),
+            responseMode,
+            ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
+          };
+          
+          const fallbackHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          
+          if (apiKey.trim()) {
+            fallbackHeaders['X-API-Key'] = apiKey.trim();
+          }
+          
+          const fallbackRes = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: fallbackHeaders,
+            body: JSON.stringify(requestBody)
+          });
+          
+          console.log('[API Test] Fallback response status:', fallbackRes.status);
+          
+          const responseText = await fallbackRes.text();
+          const result = responseText ? JSON.parse(responseText) : {};
+          
+          setResponse({ status: fallbackRes.status, data: result });
+          
+          if (fallbackRes.ok) {
+            toast({
+              title: "API Test Successful (Fallback)",
+              description: "Connected using direct Supabase URL",
+            });
+            return; // Success with fallback
+          }
+        } catch (fallbackError) {
+          console.error('[API Test] Fallback also failed:', fallbackError);
+        }
+      }
+      
+      // Both attempts failed
       const errorResult = { error: error instanceof Error ? error.message : 'Network error' };
       setResponse({ status: 'error', data: errorResult });
       toast({
         title: "Network Error",
-        description: "Failed to connect to API",
+        description: isUsingCustomApi ? "Both custom domain and fallback API failed" : "Failed to connect to API",
         variant: "destructive"
       });
     } finally {

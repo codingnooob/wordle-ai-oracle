@@ -48,8 +48,19 @@ export const isUsingCustomDomain = (): boolean => {
          hostname !== '127.0.0.1';
 };
 
-// Get the display URL for documentation (always show custom domain in production docs)
+// Get the display URL for documentation (show current environment URL)
 export const getDisplayUrl = (): string => {
+  const hostname = window.location.hostname;
+  const isDevelopment = hostname === 'localhost' || 
+                       hostname === '127.0.0.1' ||
+                       hostname.includes('lovable.app') ||
+                       hostname.includes('lovableproject.com') ||
+                       hostname.includes('vercel.app');
+                       
+  if (isDevelopment) {
+    return 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
+  }
+  
   return isUsingCustomDomain() 
     ? `${window.location.origin}/api/wordle-solver`
     : 'https://yourdomain.com/api/wordle-solver';
