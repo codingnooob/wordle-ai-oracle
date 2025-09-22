@@ -60,23 +60,11 @@ export async function getJobStatus(jobId: string, sessionToken: string) {
       return null;
     }
     
-    // Direct table query instead of RPC function to avoid JWT context issues
-    // Query analysis_jobs with validation conditions
+    // Direct table queries (separate queries to avoid foreign key dependency)
+    // Query 1: Get job data from analysis_jobs
     const { data: jobData, error: jobError } = await supabase
       .from('analysis_jobs')
-      .select(`
-        id,
-        status,
-        created_at,
-        completed_at,
-        estimated_completion_seconds,
-        error_message,
-        analysis_results (
-          solutions,
-          confidence_score,
-          processing_status
-        )
-      `)
+      .select('id, status, created_at, completed_at, estimated_completion_seconds, error_message')
       .eq('id', jobId)
       .eq('session_token', sessionToken)
       .gt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // Within 2 hours
@@ -90,10 +78,20 @@ export async function getJobStatus(jobId: string, sessionToken: string) {
     
     console.log(`[JOB MANAGER] Job status: ${jobData.status}`);
     
-    // Extract analysis results (there should be at most one)
-    const analysisResult = Array.isArray(jobData.analysis_results) 
-      ? jobData.analysis_results[0] || {}
-      : jobData.analysis_results || {};
+    // Query 2: Get analysis results for this job
+    const { data: resultsData, error: resultsError } = await supabase
+      .from('analysis_results')
+      .select('solutions, confidence_score, processing_status')
+      .eq('job_id', jobId)
+      .single();
+    
+    // Log results query (it's OK if this fails - job might not have results yet)
+    if (resultsError) {
+      console.log('[JOB MANAGER] No analysis results found (job may still be processing):', resultsError.message);
+    }
+    
+    // Combine job data with analysis results
+    const analysisResult = resultsData || {};
     
     // Return formatted response matching the original structure
     return {
