@@ -83,7 +83,7 @@ export async function getJobStatus(jobId: string, sessionToken: string) {
       .from('analysis_results')
       .select('solutions, confidence_score, processing_status')
       .eq('job_id', jobId)
-      .single();
+      .maybeSingle();
     
     // Log results query (it's OK if this fails - job might not have results yet)
     if (resultsError) {
