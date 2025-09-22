@@ -9,10 +9,11 @@ export interface ApiEndpoints {
 }
 
 export const getApiConfig = (): ApiEndpoints => {
-  // Detect environment
+  // Detect environment - use direct Supabase for development environments
   const isDevelopment = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname.includes('lovable.app');
+                       window.location.hostname.includes('lovable.app') ||
+                       window.location.hostname.includes('vercel.app');
   
   const baseUrl = isDevelopment 
     ? 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api'  // Direct Supabase for development
@@ -35,6 +36,7 @@ export const getBaseUrl = (): string => {
 // Utility to check if we're using custom domain
 export const isUsingCustomDomain = (): boolean => {
   return !window.location.hostname.includes('lovable.app') && 
+         !window.location.hostname.includes('vercel.app') &&
          window.location.hostname !== 'localhost' && 
          window.location.hostname !== '127.0.0.1';
 };

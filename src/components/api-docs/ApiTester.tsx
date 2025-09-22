@@ -91,7 +91,16 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         body: JSON.stringify(requestBody)
       });
 
-      const result = await res.json();
+      // Check if response is empty or not JSON
+      const responseText = await res.text();
+      let result;
+      
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
+      
       setResponse({ status: res.status, data: result });
 
       if (res.ok) {

@@ -34,7 +34,7 @@
     "NODE_ENV": "production"
   },
   "functions": {
-    "app/api/*.js": {
+    "api/**/*.js": {
       "runtime": "nodejs18.x"
     }
   },
@@ -76,16 +76,12 @@
   ],
   "rewrites": [
     {
-      "source": "/api/wordle-solver/status/(.*)",
-      "destination": "/api/wordle-solver/status/$1"
+      "source": "/api/wordle-solver/status/:jobId/:sessionToken",
+      "destination": "/api/wordle-solver/status/[...params]"
     },
     {
       "source": "/api/wordle-solver",
       "destination": "/api/wordle-solver/index"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
     }
   ]
 }
