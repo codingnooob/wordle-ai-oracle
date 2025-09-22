@@ -334,18 +334,30 @@ serve(async (req) => {
         try {
           const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('timeout')), 10000)
+            setTimeout(() => reject(new Error('Analysis timeout after 10 seconds')), 10000)
           );
           
           const result = await Promise.race([analysisPromise, timeoutPromise]);
           
+          // Validate result object structure before accessing properties
+          secureLog('Auto mode analysis result type check', { jobId: job.id, resultType: typeof result, hasProperties: result && typeof result === 'object' }, 'info');
+          
+          if (!result || typeof result !== 'object' || result instanceof Error) {
+            throw new Error('Invalid analysis result structure or timeout occurred');
+          }
+          
+          // Safely access properties with fallback values
+          const solutions = result.solutions || [];
+          const status = result.status || 'partial';
+          const confidence = result.confidence || 0.0;
+          
           const statusUpdate = await updateJobStatus(
             job.id, 
-            result.status === 'failed' ? 'failed' : 'complete',
+            status === 'failed' ? 'failed' : 'complete',
             new Date().toISOString()
           );
           
-          const resultsStorage = await storeResults(job.id, result.solutions, result.confidence, 'complete');
+          const resultsStorage = await storeResults(job.id, solutions, confidence, 'complete');
           
           // Log failures but don't crash the request
           if (!statusUpdate.success) {
@@ -354,14 +366,14 @@ serve(async (req) => {
           if (!resultsStorage.success) {
             secureLog('Failed to store results in auto mode', { jobId: job.id, error: resultsStorage.error }, 'error');
           }
-          secureLog('Auto mode immediate analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
+          secureLog('Auto mode immediate analysis completed', { jobId: job.id, solutionCount: solutions.length }, 'info');
           
           return new Response(JSON.stringify({
             job_id: job.id,
             session_token: job.session_token,
-            status: result.status,
-            solutions: result.solutions,
-            confidence_score: result.confidence,
+            status: status,
+            solutions: solutions,
+            confidence_score: confidence,
             processing_status: 'complete',
             response_mode: 'immediate',
             message: 'Analysis completed immediately'
