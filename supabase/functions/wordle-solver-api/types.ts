@@ -27,4 +27,6 @@ export interface AnalysisResult {
   solutions: WordleSolution[];
   status: string;
   confidence: number;
+  error?: string;
+  fallback?: boolean;
 }

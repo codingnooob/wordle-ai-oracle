@@ -271,81 +271,203 @@ function calculateWordQuality(word: string): number {
 }
 
 export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}): Promise<AnalysisResult> {
-  console.log('Starting ML analysis with same backend as main program...');
+  console.log('Starting ML analysis with enhanced error tracking...');
   
   try {
-    // Step 1: Get words from web-scraper (same as main program)
-    const { data: scrapedData, error: scraperError } = await supabase.functions.invoke('web-scraper', {
-      body: { maxWords: 200000 }
-    });
+    // Step 1: Validate inputs first
+    console.log('Validating analysis inputs...');
+    if (!Array.isArray(guessData) || guessData.length === 0) {
+      throw new Error('Invalid guess data: must be non-empty array');
+    }
     
-    if (scraperError) throw scraperError;
+    if (typeof wordLength !== 'number' || wordLength < 3 || wordLength > 15) {
+      throw new Error(`Invalid word length: ${wordLength} (must be 3-15)`);
+    }
     
-    if (!scrapedData || !scrapedData.words || !Array.isArray(scrapedData.words)) {
-      throw new Error('Invalid response from web scraper');
+    console.log(`Input validation passed: ${guessData.length} guesses, word length ${wordLength}`);
+    
+    // Step 2: Get words from web-scraper with timeout and detailed error handling
+    console.log('Calling web-scraper function with timeout...');
+    
+    let scrapedData, scraperError;
+    try {
+      const scraperPromise = supabase.functions.invoke('web-scraper', {
+        body: { maxWords: 200000 }
+      });
+      
+      // Add 15-second timeout for web scraper
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Web scraper timeout after 15 seconds')), 15000)
+      );
+      
+      const result = await Promise.race([scraperPromise, timeoutPromise]) as any;
+      scrapedData = result.data;
+      scraperError = result.error;
+      
+      console.log('Web scraper completed successfully');
+    } catch (error) {
+      console.error('Web scraper failed:', error);
+      throw new Error(`Web scraper error: ${error.message}`);
+    }
+    
+    if (scraperError) {
+      console.error('Web scraper returned error:', scraperError);
+      throw new Error(`Web scraper service error: ${scraperError.message || scraperError}`);
+    }
+    
+    if (!scrapedData) {
+      console.error('Web scraper returned null/undefined data');
+      throw new Error('Web scraper returned no data');
+    }
+    
+    if (!scrapedData.words) {
+      console.error('Web scraper response missing words array:', Object.keys(scrapedData));
+      throw new Error('Web scraper response missing words array');
+    }
+    
+    if (!Array.isArray(scrapedData.words)) {
+      console.error('Web scraper words is not an array:', typeof scrapedData.words);
+      throw new Error('Web scraper words is not an array');
+    }
+    
+    if (scrapedData.words.length === 0) {
+      console.error('Web scraper returned empty words array');
+      throw new Error('Web scraper returned empty words array');
     }
     
     console.log(`Got ${scrapedData.words.length} words from web-scraper`);
     
-    // Step 2: Analyze constraints from guess data
-    const guessHistory = [{ guess: guessData, timestamp: Date.now() }];
-    const constraints = analyzeConstraints(guessHistory);
-    
-    // Convert excludedLetters and positionExclusions to constraints format
-    for (const letter of excludedLetters) {
-      constraints.absentLetters.add(letter.toUpperCase());
-    }
-    
-    for (const [letter, positions] of Object.entries(positionExclusions)) {
-      for (const position of positions) {
-        if (!constraints.positionExclusions.has(position)) {
-          constraints.positionExclusions.set(position, new Set());
-        }
-        constraints.positionExclusions.get(position)!.add(letter.toUpperCase());
+    // Step 3: Analyze constraints from guess data
+    console.log('Analyzing constraints from guess data...');
+    try {
+      const guessHistory = [{ guess: guessData, timestamp: Date.now() }];
+      const constraints = analyzeConstraints(guessHistory);
+      
+      // Convert excludedLetters and positionExclusions to constraints format
+      for (const letter of excludedLetters) {
+        constraints.absentLetters.add(letter.toUpperCase());
       }
-    }
-    
-    console.log('Analyzed constraints:', {
-      correctPositions: Array.from(constraints.correctPositions.entries()),
-      presentLetters: Array.from(constraints.presentLetters),
-      absentLetters: Array.from(constraints.absentLetters),
-      positionExclusions: Array.from(constraints.positionExclusions.entries())
-    });
-    
-    // Step 3: Filter words by length and validate against constraints
-    const candidateWords = scrapedData.words
-      .filter((word: string) => word.length === wordLength)
-      .filter((word: string) => validateWordAgainstConstraints(word, constraints));
-    
-    console.log(`${candidateWords.length} words passed validation`);
-    
-    // Step 4: Score and sort words
-    const scoredWords = candidateWords.map((word: string) => {
-      const baseFrequency = scrapedData.words.indexOf(word) + 1; // Simple frequency based on position in corpus
-      const probability = calculateWordScore(word, constraints, baseFrequency);
+      
+      for (const [letter, positions] of Object.entries(positionExclusions)) {
+        for (const position of positions) {
+          if (!constraints.positionExclusions.has(position)) {
+            constraints.positionExclusions.set(position, new Set());
+          }
+          constraints.positionExclusions.get(position)!.add(letter.toUpperCase());
+        }
+      }
+      
+      console.log('Analyzed constraints:', {
+        correctPositions: Array.from(constraints.correctPositions.entries()),
+        presentLetters: Array.from(constraints.presentLetters),
+        absentLetters: Array.from(constraints.absentLetters),
+        positionExclusions: Array.from(constraints.positionExclusions.entries()).map(([pos, letters]) => [pos, Array.from(letters)])
+      });
+      
+      console.log('Constraint analysis completed successfully');
+      
+      // Step 4: Filter words by length and validate against constraints
+      console.log('Filtering words by length and constraints...');
+      const lengthFilteredWords = scrapedData.words.filter((word: string) => {
+        if (typeof word !== 'string') return false;
+        return word.length === wordLength;
+      });
+      
+      console.log(`${lengthFilteredWords.length} words match length ${wordLength} (from ${scrapedData.words.length} total)`);
+      
+      if (lengthFilteredWords.length === 0) {
+        console.warn('No words found matching the specified length');
+        return createFallbackResult(`No ${wordLength}-letter words found in corpus`);
+      }
+      
+      console.log('Validating words against constraints...');
+      const candidateWords = lengthFilteredWords.filter((word: string) => {
+        try {
+          return validateWordAgainstConstraints(word, constraints);
+        } catch (error) {
+          console.error(`Error validating word "${word}":`, error);
+          return false;
+        }
+      });
+      
+      console.log(`${candidateWords.length} words passed validation`);
+      
+      if (candidateWords.length === 0) {
+        console.warn('No words found matching the constraints');
+        return createFallbackResult('No words match the given constraints');
+      }
+      
+      // Step 5: Score and sort words
+      console.log('Scoring and ranking words...');
+      const scoredWords = candidateWords.map((word: string, index: number) => {
+        try {
+          const baseFrequency = scrapedData.words.indexOf(word) + 1;
+          const probability = calculateWordScore(word, constraints, baseFrequency);
+          return {
+            word: word.toUpperCase(),
+            probability
+          };
+        } catch (error) {
+          console.error(`Error scoring word "${word}":`, error);
+          return {
+            word: word.toUpperCase(),
+            probability: 0.01
+          };
+        }
+      }).sort((a, b) => b.probability - a.probability);
+      
+      // Step 6: Filter results with reasonable probability threshold
+      const solutions = scoredWords.filter(s => s.probability > 0.05);
+      
+      console.log(`Final results: ${solutions.length} solutions with probability > 5%`);
+      
       return {
-        word: word.toUpperCase(),
-        probability
+        solutions,
+        status: solutions.length > 0 ? 'complete' : 'partial',
+        confidence: solutions.length > 0 ? 0.95 : 0.5
       };
-    }).sort((a, b) => b.probability - a.probability);
-    
-    // Step 5: Filter results with reasonable probability threshold (fixed from > 1 to > 0.05)
-    const solutions = scoredWords.filter(s => s.probability > 0.05);
-    
-    console.log(`Final results: ${solutions.length} solutions with probability > 5%`);
-    
-    return {
-      solutions,
-      status: solutions.length > 0 ? 'complete' : 'partial',
-      confidence: solutions.length > 0 ? 0.95 : 0.5
-    };
+      
+    } catch (constraintError) {
+      console.error('Error during constraint analysis or word processing:', constraintError);
+      throw new Error(`Constraint analysis failed: ${constraintError.message}`);
+    }
     
   } catch (error) {
-    console.error('ML Analysis failed:', error);
-    return {
-      solutions: [],
-      status: 'failed',
-      confidence: 0.0
-    };
+    console.error('ML Analysis failed with detailed error:', error);
+    
+    // Provide specific error information for debugging
+    const errorMessage = error.message || 'Unknown error';
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: error.stack,
+      type: error.constructor.name
+    });
+    
+    // Return fallback result with error information
+    return createFallbackResult(errorMessage);
   }
+}
+
+// Fallback analysis function for when primary analysis fails
+function createFallbackResult(errorReason: string): AnalysisResult {
+  console.log('Creating fallback result due to:', errorReason);
+  
+  // Provide a minimal but functional fallback
+  const commonWords = [
+    'AROSE', 'ADIEU', 'AUDIO', 'ORATE', 'RATIO', 'TEARS', 'RATES', 'OATER',
+    'REALS', 'RALES', 'LATER', 'TALES', 'LARES', 'LASER', 'EARLS', 'LEARS'
+  ];
+  
+  const fallbackSolutions = commonWords.map(word => ({
+    word,
+    probability: 0.1
+  }));
+  
+  return {
+    solutions: fallbackSolutions,
+    status: 'partial',
+    confidence: 0.3,
+    error: errorReason,
+    fallback: true
+  };
 }
