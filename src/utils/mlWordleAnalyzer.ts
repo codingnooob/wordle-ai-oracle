@@ -19,7 +19,7 @@ class MLWordleAnalyzer {
   }
 
   async analyzeGuess(guessData: GuessData[], wordLength: number, excludedLetters: Set<string> = new Set(), positionExclusions: Map<string, Set<number>> = new Map()): Promise<MLWordleSolution[]> {
-    console.log('=== Starting Enhanced ML Analysis ===');
+    console.log('=== Starting Unified ML Analysis ===');
     console.log('Input guess data:', guessData);
     console.log('Word length:', wordLength);
     console.log('Excluded letters:', Array.from(excludedLetters));
@@ -34,12 +34,21 @@ class MLWordleAnalyzer {
     }
 
     try {
-      // Use real ML analyzer to get genuine probabilities
+      // First, try the unified analysis edge function
+      const unifiedResult = await this.callUnifiedAnalysis(guessData, wordLength, excludedLetters, positionExclusions);
+      
+      if (unifiedResult && unifiedResult.length > 0) {
+        console.log('✅ Unified analysis successful:', unifiedResult.slice(0, 5));
+        return unifiedResult;
+      }
+      
+      console.log('⚠️ Unified analysis returned no results, falling back to local ML analyzer...');
+      
+      // Fallback to existing ML analyzer
       const solutions = await realMLAnalyzer.analyzeGuess(guessData, wordLength, excludedLetters, positionExclusions);
       
       if (solutions.length === 0) {
-        console.log('⚠️ No solutions found - this might be the duplicate letter bug!');
-        console.log('Falling back to enhanced fallback analysis...');
+        console.log('⚠️ Local ML analyzer also found no solutions - using enhanced fallback...');
         return this.enhancedFallbackAnalysis(guessData, wordLength, excludedLetters, positionExclusions);
       }
       
@@ -49,11 +58,50 @@ class MLWordleAnalyzer {
         probability: Math.round(solution.probability * 100 * 10) / 10
       }));
       
-      console.log('Enhanced ML Analysis complete:', solutionsWithPercentage);
+      console.log('Local ML Analysis complete:', solutionsWithPercentage);
       return solutionsWithPercentage;
     } catch (error) {
-      console.error('Enhanced ML Analysis failed:', error);
+      console.error('All analysis methods failed:', error);
       return this.enhancedFallbackAnalysis(guessData, wordLength, excludedLetters, positionExclusions);
+    }
+  }
+
+  private async callUnifiedAnalysis(guessData: GuessData[], wordLength: number, excludedLetters: Set<string>, positionExclusions: Map<string, Set<number>>): Promise<MLWordleSolution[]> {
+    try {
+      console.log('Calling unified wordle analysis edge function...');
+      
+      // Convert position exclusions map to plain object for JSON serialization
+      const positionExclusionsObj: { [key: string]: number[] } = {};
+      for (const [letter, positions] of positionExclusions) {
+        positionExclusionsObj[letter] = Array.from(positions);
+      }
+      
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const response = await supabase.functions.invoke('unified-wordle-analysis', {
+        body: {
+          guessData,
+          wordLength,
+          excludedLetters: Array.from(excludedLetters),
+          positionExclusions: positionExclusionsObj
+        }
+      });
+
+      if (response.error) {
+        console.error('Unified analysis error:', response.error);
+        return [];
+      }
+
+      if (response.data && response.data.solutions) {
+        console.log(`✅ Unified analysis returned ${response.data.solutions.length} solutions`);
+        return response.data.solutions;
+      }
+
+      console.log('⚠️ Unified analysis returned no solutions');
+      return [];
+    } catch (error) {
+      console.error('Failed to call unified analysis:', error);
+      return [];
     }
   }
 

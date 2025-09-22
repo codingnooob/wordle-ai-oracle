@@ -275,7 +275,7 @@ let webScraperFailureCount = 0;
 const MAX_SCRAPER_FAILURES = 3;
 
 export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}): Promise<AnalysisResult> {
-  console.log('Starting simplified ML analysis...');
+  console.log('Starting unified ML analysis...');
   
   // Basic error boundary - catch ALL errors and return fallback
   try {
@@ -287,13 +287,50 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
     
     console.log(`Input validation passed: ${guessData.length} guesses, word length ${wordLength}`);
     
-    // Step 2: Circuit breaker check - if web scraper has been failing, skip it
+    // Step 2: Try the unified analysis edge function first
+    try {
+      console.log('Attempting unified-wordle-analysis edge function...');
+      
+      const unifiedResponse = await supabase.functions.invoke('unified-wordle-analysis', {
+        body: {
+          guessData,
+          wordLength,
+          excludedLetters,
+          positionExclusions
+        }
+      });
+
+      if (unifiedResponse.data && unifiedResponse.data.solutions && Array.isArray(unifiedResponse.data.solutions)) {
+        console.log(`✅ Unified analysis returned ${unifiedResponse.data.solutions.length} solutions`);
+        
+        const solutions: WordleSolution[] = unifiedResponse.data.solutions.map((solution: any) => ({
+          word: solution.word,
+          probability: solution.probability
+        }));
+
+        return {
+          solutions,
+          analysisType: 'unified',
+          processingTime: Date.now(),
+          wordCount: unifiedResponse.data.corpusSize || solutions.length,
+          constraintsSatisfied: solutions.length > 0
+        };
+      }
+
+      console.log('⚠️ Unified analysis failed or returned no results, falling back to legacy analysis...');
+      
+    } catch (error) {
+      console.error('Unified analysis failed:', error.message);
+      console.log('Falling back to legacy analysis...');
+    }
+    
+    // Step 3: Circuit breaker check - if web scraper has been failing, skip it
     if (webScraperFailureCount >= MAX_SCRAPER_FAILURES) {
       console.log('Web scraper circuit breaker active, using fallback corpus');
       return performAnalysisWithFallbackCorpus(guessData, wordLength, excludedLetters, positionExclusions);
     }
     
-    // Step 3: Try web-scraper with aggressive timeout
+    // Step 4: Try web-scraper with aggressive timeout (legacy fallback)
     let scrapedData;
     try {
       console.log('Attempting web-scraper with 8-second timeout...');
@@ -324,7 +361,7 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
       return performAnalysisWithFallbackCorpus(guessData, wordLength, excludedLetters, positionExclusions);
     }
     
-    // Step 4: Perform analysis with scraped words
+    // Step 5: Perform analysis with scraped words (legacy method)
     return performAnalysisWithWordList(scrapedData.words, guessData, wordLength, excludedLetters, positionExclusions);
     
   } catch (error) {

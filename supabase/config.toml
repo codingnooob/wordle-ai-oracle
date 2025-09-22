@@ -3,5 +3,8 @@ project_id = "tctpfuqvpvkcdidyiowu"
 [functions.wordle-solver-api]
 verify_jwt = false
 
+[functions.unified-wordle-analysis]
+verify_jwt = false
+
 [functions.security-cleanup]
 verify_jwt = false
