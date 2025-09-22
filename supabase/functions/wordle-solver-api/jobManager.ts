@@ -6,43 +6,87 @@ const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function createJob(inputData: any) {
-  const { data: job, error: jobError } = await supabase
-    .from('analysis_jobs')
-    .insert({
-      input_data: inputData,
-      status: 'processing',
-      estimated_completion_seconds: 15
-    })
-    .select('id, session_token, status, created_at, estimated_completion_seconds')
-    .single();
-  
-  if (jobError || !job) {
-    throw new Error('Failed to create analysis job');
+  try {
+    console.log('[JOB MANAGER] Creating new analysis job');
+    const { data: job, error: jobError } = await supabase
+      .from('analysis_jobs')
+      .insert({
+        input_data: inputData,
+        status: 'processing',
+        estimated_completion_seconds: 15
+      })
+      .select('id, session_token, status, created_at, estimated_completion_seconds')
+      .single();
+    
+    if (jobError || !job) {
+      console.error('[JOB MANAGER] Failed to create job:', jobError?.message || 'No job data returned');
+      throw new Error(`Failed to create analysis job: ${jobError?.message || 'Unknown error'}`);
+    }
+    
+    console.log(`[JOB MANAGER] Successfully created job: ${job.id}`);
+    return job;
+  } catch (error) {
+    console.error('[JOB MANAGER] Job creation error:', error);
+    throw error; // Re-throw to maintain existing error behavior
   }
-  
-  return job;
 }
 
-export async function updateJobStatus(jobId: string, status: string, completedAt?: string, errorMessage?: string) {
-  await supabase
-    .from('analysis_jobs')
-    .update({ 
-      status,
-      completed_at: completedAt,
-      error_message: errorMessage
-    })
-    .eq('id', jobId);
+export async function updateJobStatus(jobId: string, status: string, completedAt?: string, errorMessage?: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[JOB MANAGER] Updating job ${jobId} status to: ${status}`);
+    const { error } = await supabase
+      .from('analysis_jobs')
+      .update({ 
+        status,
+        completed_at: completedAt,
+        error_message: errorMessage
+      })
+      .eq('id', jobId);
+    
+    if (error) {
+      console.error(`[JOB MANAGER] Failed to update job status for ${jobId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+    
+    console.log(`[JOB MANAGER] Successfully updated job ${jobId} status to: ${status}`);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[JOB MANAGER] Unexpected error updating job status for ${jobId}:`, errorMessage);
+    return { success: false, error: errorMessage };
+  }
 }
 
-export async function storeResults(jobId: string, solutions: any[], confidence: number, processingStatus: string) {
-  await supabase
-    .from('analysis_results')
-    .insert({
-      job_id: jobId,
-      solutions,
-      confidence_score: confidence,
-      processing_status: processingStatus
-    });
+export async function storeResults(jobId: string, solutions: any[], confidence: number, processingStatus: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[JOB MANAGER] Storing results for job ${jobId}, solutions count: ${solutions?.length || 0}`);
+    const { error } = await supabase
+      .from('analysis_results')
+      .insert({
+        job_id: jobId,
+        solutions,
+        confidence_score: confidence,
+        processing_status: processingStatus
+      });
+    
+    if (error) {
+      // Handle duplicate key errors gracefully (results might already exist)
+      if (error.code === '23505') {
+        console.log(`[JOB MANAGER] Results already exist for job ${jobId}, skipping insert`);
+        return { success: true }; // Treat duplicates as success
+      }
+      
+      console.error(`[JOB MANAGER] Failed to store results for job ${jobId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+    
+    console.log(`[JOB MANAGER] Successfully stored results for job ${jobId}`);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[JOB MANAGER] Unexpected error storing results for job ${jobId}:`, errorMessage);
+    return { success: false, error: errorMessage };
+  }
 }
 
 export async function getJobStatus(jobId: string, sessionToken: string) {

@@ -339,13 +339,21 @@ serve(async (req) => {
           
           const result = await Promise.race([analysisPromise, timeoutPromise]);
           
-          await updateJobStatus(
+          const statusUpdate = await updateJobStatus(
             job.id, 
             result.status === 'failed' ? 'failed' : 'complete',
             new Date().toISOString()
           );
           
-          await storeResults(job.id, result.solutions, result.confidence, 'complete');
+          const resultsStorage = await storeResults(job.id, result.solutions, result.confidence, 'complete');
+          
+          // Log failures but don't crash the request
+          if (!statusUpdate.success) {
+            secureLog('Failed to update job status in auto mode', { jobId: job.id, error: statusUpdate.error }, 'error');
+          }
+          if (!resultsStorage.success) {
+            secureLog('Failed to store results in auto mode', { jobId: job.id, error: resultsStorage.error }, 'error');
+          }
           secureLog('Auto mode immediate analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
           
           return new Response(JSON.stringify({
@@ -370,23 +378,36 @@ serve(async (req) => {
               secureLog('Auto mode background task started', { jobId: job.id }, 'info');
               const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
               
-              await updateJobStatus(
+              const statusUpdate = await updateJobStatus(
                 job.id, 
                 result.status === 'failed' ? 'failed' : 'complete',
                 new Date().toISOString()
               );
               
-              await storeResults(job.id, result.solutions, result.confidence, 'complete');
+              const resultsStorage = await storeResults(job.id, result.solutions, result.confidence, 'complete');
+              
+              // Log failures but continue background processing
+              if (!statusUpdate.success) {
+                secureLog('Failed to update job status in background task', { jobId: job.id, error: statusUpdate.error }, 'error');
+              }
+              if (!resultsStorage.success) {
+                secureLog('Failed to store results in background task', { jobId: job.id, error: resultsStorage.error }, 'error');
+              }
               secureLog('Auto mode async analysis completed', { jobId: job.id, solutionCount: result.solutions?.length || 0 }, 'info');
             } catch (error) {
               const safeError = getSafeErrorMessage(error, 'Auto Mode Async Analysis');
               secureLog('Auto mode async analysis failed', { jobId: job.id, error: safeError }, 'error');
-              await updateJobStatus(
+              const statusUpdate = await updateJobStatus(
                 job.id, 
                 'failed',
                 new Date().toISOString(),
                 safeError
               );
+              
+              // Log failure but don't throw - we're already in error handling
+              if (!statusUpdate.success) {
+                secureLog('Failed to update job status to failed', { jobId: job.id, error: statusUpdate.error }, 'error');
+              }
             }
           };
           
