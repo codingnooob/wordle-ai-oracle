@@ -83,13 +83,6 @@ export type Database = {
             referencedRelation: "analysis_jobs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "analysis_results_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "job_status_view"
-            referencedColumns: ["id"]
-          },
         ]
       }
       api_usage: {
@@ -218,13 +211,6 @@ export type Database = {
             referencedRelation: "analysis_jobs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "session_tokens_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "job_status_view"
-            referencedColumns: ["id"]
-          },
         ]
       }
       system_config: {
@@ -256,7 +242,7 @@ export type Database = {
       }
     }
     Views: {
-      job_status_view: {
+      job_status_secure_view: {
         Row: {
           completed_at: string | null
           created_at: string | null
@@ -265,24 +251,6 @@ export type Database = {
           id: string | null
           session_token_hint: string | null
           status: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          estimated_completion_seconds?: number | null
-          id?: string | null
-          session_token_hint?: never
-          status?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          estimated_completion_seconds?: number | null
-          id?: string | null
-          session_token_hint?: never
-          status?: string | null
         }
         Relationships: []
       }
@@ -354,6 +322,18 @@ export type Database = {
           job_id: string
           processing_status: string
           solutions: Json
+          status: string
+        }[]
+      }
+      get_job_status_secure_view: {
+        Args: { p_job_id?: string; p_limit?: number }
+        Returns: {
+          completed_at: string
+          created_at: string
+          error_message: string
+          estimated_completion_seconds: number
+          id: string
+          session_token_hint: string
           status: string
         }[]
       }
