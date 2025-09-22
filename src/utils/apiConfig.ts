@@ -8,6 +8,13 @@ export interface ApiEndpoints {
   status: (jobId: string, sessionToken: string) => string;
 }
 
+interface FallbackEndpoints {
+  analyze: string;
+  status: (jobId: string, sessionToken: string) => string;
+}
+
+const SUPABASE_DIRECT_URL = 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
+
 export const getApiConfig = (): ApiEndpoints => {
   // Detect environment - use direct Supabase for all Lovable domains and development
   const hostname = window.location.hostname;
@@ -18,7 +25,7 @@ export const getApiConfig = (): ApiEndpoints => {
                        hostname.includes('vercel.app');
   
   const baseUrl = isDevelopment 
-    ? 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api'  // Direct Supabase for development
+    ? SUPABASE_DIRECT_URL  // Direct Supabase for development
     : `${window.location.origin}/api/wordle-solver`;  // Custom domain for production
     
   // Debug logging
@@ -29,6 +36,17 @@ export const getApiConfig = (): ApiEndpoints => {
     status: (jobId: string, sessionToken: string) => {
       const encodedToken = encodeURIComponent(sessionToken);
       return `${baseUrl}/status/${jobId}/${encodedToken}`;
+    }
+  };
+};
+
+export const getFallbackConfig = (): FallbackEndpoints => {
+  // Always return direct Supabase URLs for fallback
+  return {
+    analyze: SUPABASE_DIRECT_URL,
+    status: (jobId: string, sessionToken: string) => {
+      const encodedToken = encodeURIComponent(sessionToken);
+      return `${SUPABASE_DIRECT_URL}/status/${jobId}/${encodedToken}`;
     }
   };
 };
@@ -58,7 +76,7 @@ export const getDisplayUrl = (): string => {
                        hostname.includes('vercel.app');
                        
   if (isDevelopment) {
-    return 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
+    return SUPABASE_DIRECT_URL;
   }
   
   return isUsingCustomDomain() 

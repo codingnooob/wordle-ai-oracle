@@ -13,11 +13,11 @@
   "routes": [
     {
       "src": "/api/wordle-solver/status/(.*)",
-      "dest": "/api/wordle-solver/status/[...params]"
+      "dest": "/api/wordle-solver/status"
     },
     {
       "src": "/api/wordle-solver",
-      "dest": "/api/wordle-solver/index"
+      "dest": "/api/wordle-solver"
     },
     {
       "src": "/(.*)",
@@ -28,8 +28,11 @@
     "NODE_ENV": "production"
   },
   "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs18.x"
+    "api/wordle-solver.ts": {
+      "runtime": "edge"
+    },
+    "api/wordle-solver/status.ts": {
+      "runtime": "edge"
     }
   },
   "headers": [
@@ -71,11 +74,11 @@
   "rewrites": [
     {
       "source": "/api/wordle-solver/status/:jobId/:sessionToken",
-      "destination": "/api/wordle-solver/status/[...params]"
+      "destination": "/api/wordle-solver/status"
     },
     {
       "source": "/api/wordle-solver",
-      "destination": "/api/wordle-solver/index"
+      "destination": "/api/wordle-solver"
     }
   ]
 }

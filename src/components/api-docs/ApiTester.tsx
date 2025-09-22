@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Play, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getApiConfig } from '@/utils/apiConfig';
+import { getApiConfig, getFallbackConfig } from '@/utils/apiConfig';
 
 interface ApiTesterProps {
   baseUrl: string;
@@ -42,6 +42,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const [showStatusDemo, setShowStatusDemo] = useState(false);
   const [demoJobId, setDemoJobId] = useState('');
   const [demoSessionToken, setDemoSessionToken] = useState('');
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const updateWordLength = (newLength: number) => {
     setWordLength(newLength);
@@ -65,6 +66,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const testApi = async () => {
     setLoading(true);
     setResponse(null);
+    setUsingFallback(false);
 
     try {
       const apiConfig = getApiConfig();
@@ -88,11 +90,24 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
       console.log('[API Test] Sending request to:', apiConfig.analyze);
       console.log('[API Test] Request body:', requestBody);
 
-      const res = await fetch(apiConfig.analyze, {
+      let res = await fetch(apiConfig.analyze, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
       });
+
+      // If custom domain fails, try fallback to direct Supabase
+      if (!res.ok && apiConfig.analyze !== getFallbackConfig().analyze) {
+        console.log('[API Test] Custom domain failed, trying fallback to direct Supabase...');
+        setUsingFallback(true);
+        
+        const fallbackConfig = getFallbackConfig();
+        res = await fetch(fallbackConfig.analyze, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody)
+        });
+      }
 
       console.log('[API Test] Response status:', res.status);
       console.log('[API Test] Response headers:', Object.fromEntries(res.headers.entries()));
@@ -140,63 +155,13 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         });
       }
     } catch (error) {
-      console.error('[API Test] Primary API failed:', error);
+      console.error('[API Test] Error:', error);
       
-      // Fallback: Try direct Supabase URL if custom domain API fails
-      const currentConfig = getApiConfig();
-      const isUsingCustomApi = !currentConfig.analyze.includes('supabase.co');
-      
-      if (isUsingCustomApi) {
-        console.log('[API Test] Attempting fallback to direct Supabase...');
-        try {
-          const fallbackUrl = 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
-          const requestBody = {
-            guessData: guessData.filter(tile => tile.letter.trim() !== ''),
-            wordLength,
-            excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l),
-            responseMode,
-            ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
-          };
-          
-          const fallbackHeaders: Record<string, string> = {
-            'Content-Type': 'application/json',
-          };
-          
-          if (apiKey.trim()) {
-            fallbackHeaders['X-API-Key'] = apiKey.trim();
-          }
-          
-          const fallbackRes = await fetch(fallbackUrl, {
-            method: 'POST',
-            headers: fallbackHeaders,
-            body: JSON.stringify(requestBody)
-          });
-          
-          console.log('[API Test] Fallback response status:', fallbackRes.status);
-          
-          const responseText = await fallbackRes.text();
-          const result = responseText ? JSON.parse(responseText) : {};
-          
-          setResponse({ status: fallbackRes.status, data: result });
-          
-          if (fallbackRes.ok) {
-            toast({
-              title: "API Test Successful (Fallback)",
-              description: "Connected using direct Supabase URL",
-            });
-            return; // Success with fallback
-          }
-        } catch (fallbackError) {
-          console.error('[API Test] Fallback also failed:', fallbackError);
-        }
-      }
-      
-      // Both attempts failed
       const errorResult = { error: error instanceof Error ? error.message : 'Network error' };
       setResponse({ status: 'error', data: errorResult });
       toast({
         title: "Network Error",
-        description: isUsingCustomApi ? "Both custom domain and fallback API failed" : "Failed to connect to API",
+        description: "Failed to connect to API",
         variant: "destructive"
       });
     } finally {
@@ -221,8 +186,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     }
 
     try {
-      const apiConfig = getApiConfig();
-      const statusRes = await fetch(apiConfig.status(jobId, sessionToken));
+      // Use the same endpoint type (custom/fallback) that worked for the initial request
+      const config = usingFallback ? getFallbackConfig() : getApiConfig();
+      const statusRes = await fetch(config.status(jobId, sessionToken));
       const statusData = await statusRes.json();
       
       if (statusData.status === 'complete' || statusData.status === 'failed' || statusData.status === 'partial') {
@@ -283,8 +249,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
 
     setLoading(true);
     try {
-      const apiConfig = getApiConfig();
-      const statusRes = await fetch(apiConfig.status(demoJobId.trim(), demoSessionToken.trim()));
+      // Use the same endpoint type based on current fallback state
+      const config = usingFallback ? getFallbackConfig() : getApiConfig();
+      const statusRes = await fetch(config.status(demoJobId.trim(), demoSessionToken.trim()));
       const statusData = await statusRes.json();
       setResponse({ status: statusRes.status, data: statusData });
       
