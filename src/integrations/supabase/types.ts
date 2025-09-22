@@ -242,18 +242,7 @@ export type Database = {
       }
     }
     Views: {
-      job_status_secure_view: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          error_message: string | null
-          estimated_completion_seconds: number | null
-          id: string | null
-          session_token_hint: string | null
-          status: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cleanup_api_usage_data: {
