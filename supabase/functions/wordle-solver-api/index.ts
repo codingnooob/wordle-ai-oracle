@@ -1,12 +1,18 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 import { corsHeaders } from './corsConfig.ts';
 import { WordleAPIRequest } from './types.ts';
 import { validateWordleRequest } from './validation.ts';
 import { validateRequest, trackUsage, validateRequestSize } from './rateLimit.ts';
 import { performMLAnalysis } from './analysis.ts';
 import { createJob, updateJobStatus, storeResults, getJobStatus } from './jobManager.ts';
+
+// Initialize Supabase client for edge functions
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Security utilities (inline since we can't import from src/ in edge functions)
 function secureLog(message: string, data?: any, level: 'info' | 'warn' | 'error' = 'info'): void {
@@ -190,17 +196,64 @@ serve(async (req) => {
           state: tile.state
         }));
         
-        // Create job record with enhanced security data
-        const job = await createJob({ 
-          guessData: sanitizedGuessData, 
-          wordLength, 
-          excludedLetters,
-          source_ip: sourceIp,
-          clientFingerprint: fingerprint
-        });
+        // Create job record with enhanced security data - with graceful fallback
+        let job = null;
+        try {
+          job = await createJob({ 
+            guessData: sanitizedGuessData, 
+            wordLength, 
+            excludedLetters,
+            source_ip: sourceIp,
+            clientFingerprint: fingerprint
+          });
+          
+          if (!job?.id) {
+            secureLog('Job creation returned invalid response', { inputDataKeys: Object.keys(sanitizedGuessData) }, 'warn');
+            throw new Error('Invalid job response');
+          }
+        } catch (error) {
+          secureLog('Job creation failed - continuing with analysis', { error: error.message }, 'warn');
+          
+          // For immediate mode, continue without job tracking
+          if (responseMode === 'immediate') {
+            try {
+              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
+              const solutions = result?.solutions || [];
+              const confidence = result?.confidence || 0.0;
+              
+              return new Response(JSON.stringify({
+                solutions: solutions,
+                status: solutions.length > 0 ? 'complete' : 'partial',
+                confidence: confidence,
+                processing_status: 'complete',
+                response_mode: 'immediate',
+                note: 'Analysis completed without job tracking'
+              }), {
+                headers: { ...secureHeaders, 'Content-Type': 'application/json' }
+              });
+            } catch (analysisError) {
+              return new Response(JSON.stringify({ 
+                error: 'Analysis failed',
+                details: getSafeErrorMessage(analysisError, 'Analysis without job tracking')
+              }), {
+                status: 500,
+                headers: { ...secureHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+          }
+          
+          // For async/auto modes, return error since we need job tracking
+          return new Response(JSON.stringify({ 
+            error: 'Service temporarily unavailable - job tracking system unavailable',
+            suggestion: 'Please try again with responseMode: "immediate" for a direct result'
+          }), {
+            status: 503,
+            headers: { ...secureHeaders, 'Content-Type': 'application/json' }
+          });
+        }
 
-        // Create hashed session token for enhanced security
-        if (job) {
+        // Only proceed with session token creation if job was created successfully
+        if (job?.id) {
           try {
             await supabase.rpc('create_hashed_session_token', {
               token_param: job.session_token,
@@ -215,10 +268,20 @@ serve(async (req) => {
           }
         }
         
-        secureLog('Job created', { jobId: job.id, responseMode }, 'info');
+        secureLog('Job created', { jobId: job?.id || 'none', responseMode }, 'info');
         
         // Handle different response modes with better error handling
         if (responseMode === 'immediate') {
+          // If job creation failed earlier, we already returned a response
+          if (!job?.id) {
+            return new Response(JSON.stringify({ 
+              error: 'Job tracking unavailable for immediate mode'
+            }), {
+              status: 500,
+              headers: { ...secureHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
           try {
             secureLog('Starting immediate analysis', { jobId: job.id }, 'info');
             const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
@@ -282,6 +345,15 @@ serve(async (req) => {
         }
 
         if (responseMode === 'async') {
+          if (!job?.id) {
+            return new Response(JSON.stringify({ 
+              error: 'Job tracking required for async mode but unavailable'
+            }), {
+              status: 503,
+              headers: { ...secureHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
           secureLog('Starting async processing', { jobId: job.id }, 'info');
           
           // Use modern EdgeRuntime.waitUntil for background processing
@@ -367,6 +439,15 @@ serve(async (req) => {
         }
 
         // Default 'auto' mode: Try immediate, fallback to async
+        if (!job?.id) {
+          return new Response(JSON.stringify({ 
+            error: 'Job tracking required for auto mode but unavailable'
+          }), {
+            status: 503,
+            headers: { ...secureHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
         try {
           const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {});
           const timeoutPromise = new Promise((_, reject) => 
