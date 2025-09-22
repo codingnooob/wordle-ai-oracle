@@ -185,6 +185,48 @@ export type Database = {
         }
         Relationships: []
       }
+      session_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_revoked: boolean
+          job_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_revoked?: boolean
+          job_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_revoked?: boolean
+          job_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_tokens_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tokens_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_status_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_config: {
         Row: {
           created_at: string | null
@@ -254,9 +296,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_expired_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_sensitive_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_hashed_session_token: {
+        Args: { job_id_param: string; token_param: string }
+        Returns: string
       }
       get_api_usage_stats: {
         Args: Record<PropertyKey, never>
@@ -338,6 +388,14 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      revoke_session_token: {
+        Args: { job_id_param: string; token_param: string }
+        Returns: boolean
+      }
+      validate_hashed_session_token: {
+        Args: { job_id_param: string; token_param: string }
+        Returns: boolean
       }
       validate_session_token: {
         Args: { job_id: string; token: string }
