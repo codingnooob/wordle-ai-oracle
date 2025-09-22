@@ -302,8 +302,19 @@ serve(async (req) => {
             });
           }
           
-          const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
-          const encodedSessionToken = encodeURIComponent(job.session_token);
+          // Generate proper status URL based on request origin
+          const requestOrigin = req.headers.get('origin') || '';
+          const currentUrl = new URL(req.url);
+          const isCustomDomain = !currentUrl.hostname.includes('supabase.co');
+          
+          let statusUrl: string;
+          if (isCustomDomain) {
+            // For custom domains, construct URL from the current request
+            statusUrl = `https://${currentUrl.hostname}/api/wordle-solver/status/${job.id}/${encodedSessionToken}`;
+          } else {
+            // For direct Supabase calls, use the direct function URL
+            statusUrl = `https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api/status/${job.id}/${encodedSessionToken}`;
+          }
           
           return new Response(JSON.stringify({
             job_id: job.id,
@@ -312,7 +323,7 @@ serve(async (req) => {
             message: 'Analysis started. Use the status endpoint to check progress.',
             estimated_completion_seconds: 15,
             response_mode: 'async',
-            status_url: `${baseUrl}/status/${job.id}/${encodedSessionToken}`
+            status_url: statusUrl
           }), {
             status: 202,
             headers: { ...secureHeaders, 'Content-Type': 'application/json' }
@@ -389,8 +400,18 @@ serve(async (req) => {
             });
           }
           
-          const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
-          const encodedSessionToken = encodeURIComponent(job.session_token);
+          // Generate proper status URL based on request origin
+          const currentUrl = new URL(req.url);
+          const isCustomDomain = !currentUrl.hostname.includes('supabase.co');
+          
+          let statusUrl: string;
+          if (isCustomDomain) {
+            // For custom domains, construct URL from the current request
+            statusUrl = `https://${currentUrl.hostname}/api/wordle-solver/status/${job.id}/${encodedSessionToken}`;
+          } else {
+            // For direct Supabase calls, use the direct function URL
+            statusUrl = `https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api/status/${job.id}/${encodedSessionToken}`;
+          }
           
           return new Response(JSON.stringify({
             job_id: job.id,
@@ -399,7 +420,7 @@ serve(async (req) => {
             message: 'Analysis started, check status using the job_id and session_token',
             estimated_completion_seconds: 15,
             response_mode: 'async',
-            status_url: `${baseUrl}/status/${job.id}/${encodedSessionToken}`
+            status_url: statusUrl
           }), {
             headers: { ...secureHeaders, 'Content-Type': 'application/json' }
           });

@@ -347,10 +347,13 @@ export type Database = {
         Args: { job_id_param: string; session_token_param: string }
         Returns: {
           completed_at: string
+          confidence_score: number
           created_at: string
           error_message: string
           estimated_completion_seconds: number
           job_id: string
+          processing_status: string
+          solutions: Json
           status: string
         }[]
       }
