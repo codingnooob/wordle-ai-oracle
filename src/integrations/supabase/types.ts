@@ -87,6 +87,13 @@ export type Database = {
             foreignKeyName: "analysis_results_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
+            referencedRelation: "job_status_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
             referencedRelation: "job_status_view"
             referencedColumns: ["id"]
           },
@@ -222,6 +229,13 @@ export type Database = {
             foreignKeyName: "session_tokens_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
+            referencedRelation: "job_status_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tokens_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
             referencedRelation: "job_status_view"
             referencedColumns: ["id"]
           },
@@ -256,6 +270,33 @@ export type Database = {
       }
     }
     Views: {
+      job_status_public: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          estimated_completion_seconds: number | null
+          id: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       job_status_view: {
         Row: {
           completed_at: string | null
@@ -340,6 +381,17 @@ export type Database = {
           job_id: string
           processing_status: string
           solutions: Json
+          status: string
+        }[]
+      }
+      get_job_status_secure_v2: {
+        Args: { job_id_param: string; session_token_param: string }
+        Returns: {
+          completed_at: string
+          created_at: string
+          error_message: string
+          estimated_completion_seconds: number
+          job_id: string
           status: string
         }[]
       }
