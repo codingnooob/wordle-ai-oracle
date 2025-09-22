@@ -58,14 +58,20 @@ const ApiProxy = () => {
           preElement.textContent = `Error: ${data}`; // Safe - no XSS risk
         }
         
-        document.body.innerHTML = ''; // Clear existing content
+        // Safe DOM manipulation - clear existing content
+        while (document.body.firstChild) {
+          document.body.removeChild(document.body.firstChild);
+        }
         document.body.appendChild(preElement);
       } catch (error) {
         console.error('API request failed:', error);
         const preElement = document.createElement('pre');
         preElement.style.cssText = 'white-space: pre-wrap; font-family: monospace; padding: 1rem; background: #f5f5f5; border-radius: 4px; color: #d32f2f;';
         preElement.textContent = `Error: ${error.message}`;
-        document.body.innerHTML = '';
+        // Safe DOM manipulation
+        while (document.body.firstChild) {
+          document.body.removeChild(document.body.firstChild);
+        }
         document.body.appendChild(preElement);
       }
     };
