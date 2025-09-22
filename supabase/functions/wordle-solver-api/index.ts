@@ -146,11 +146,22 @@ serve(async (req) => {
         
         const { guessData, wordLength, excludedLetters, positionExclusions, apiKey, responseMode = 'auto' } = requestBody;
         
-        // Extract client info for rate limiting
-        const sourceIp = req.headers.get('x-forwarded-for') || 
-                        req.headers.get('x-real-ip') || 
-                        'unknown';
-        const clientId = req.headers.get('x-forwarded-for') || 'unknown';
+        // Extract client info for rate limiting with better IP handling
+        const rawIP = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     req.headers.get('cf-connecting-ip') || // Cloudflare
+                     'unknown';
+        
+        // Log all IP headers for debugging
+        secureLog('IP Headers Debug', {
+          'x-forwarded-for': req.headers.get('x-forwarded-for'),
+          'x-real-ip': req.headers.get('x-real-ip'),
+          'cf-connecting-ip': req.headers.get('cf-connecting-ip'),
+          'final-raw-ip': rawIP
+        }, 'info');
+        
+        const sourceIp = rawIP;
+        const clientId = req.headers.get('x-client-id') || 'unknown';
         
         // Validate request and rate limiting
         const validation = await validateRequest(apiKey, clientId, sourceIp);

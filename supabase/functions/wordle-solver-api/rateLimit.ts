@@ -6,6 +6,42 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Enhanced IP extraction and parsing
+function extractClientIP(rawIP: string): string | null {
+  if (!rawIP || rawIP === 'unknown') {
+    return null;
+  }
+
+  // Handle multiple IPs (x-forwarded-for can have: "client, proxy1, proxy2")
+  const ips = rawIP.split(',').map(ip => ip.trim());
+  const clientIP = ips[0]; // First IP is usually the client
+
+  // Remove port number if present (IPv4:port or [IPv6]:port)
+  let cleanIP = clientIP;
+  if (clientIP.includes(':') && !clientIP.startsWith('[')) {
+    // IPv4 with port (e.g., "192.168.1.1:8080")
+    const parts = clientIP.split(':');
+    if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+      cleanIP = parts[0];
+    }
+  } else if (clientIP.startsWith('[') && clientIP.includes(']:')) {
+    // IPv6 with port (e.g., "[::1]:8080")
+    cleanIP = clientIP.substring(1, clientIP.indexOf(']:'));
+  }
+
+  return cleanIP;
+}
+
+function isValidIP(ip: string): boolean {
+  // More lenient IPv4 regex
+  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  
+  // More lenient IPv6 regex that handles shorthand notation
+  const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$|^(?:[0-9a-fA-F]{1,4}:)*::[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4})*$/;
+  
+  return ipv4Regex.test(ip) || ipv6Regex.test(ip);
+}
+
 export async function validateRequest(
   apiKey?: string,
   clientId?: string,
@@ -14,16 +50,63 @@ export async function validateRequest(
   try {
     // Enhanced IP validation and rate limiting
     if (sourceIp && sourceIp !== 'unknown') {
-      // Validate IP format
-      const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-      if (!ipRegex.test(sourceIp)) {
-        await logSecurityEvent('invalid_ip_format', sourceIp, null, null, 'wordle-solver', 'warn', {
-          invalidIp: sourceIp
+      // Log raw IP for debugging
+      await logSecurityEvent('ip_debug', sourceIp, null, null, 'wordle-solver', 'info', {
+        rawIP: sourceIp,
+        step: 'received'
+      });
+
+      // Extract and clean the client IP
+      const clientIP = extractClientIP(sourceIp);
+      
+      if (!clientIP) {
+        await logSecurityEvent('ip_extraction_failed', sourceIp, null, null, 'wordle-solver', 'warn', {
+          rawIP: sourceIp,
+          reason: 'Could not extract valid IP'
         });
-        return {
-          valid: false,
-          error: 'Invalid IP address format'
-        };
+        // Don't reject - continue without IP-based rate limiting
+      } else {
+        // Log extracted IP for debugging
+        await logSecurityEvent('ip_debug', clientIP, null, null, 'wordle-solver', 'info', {
+          rawIP: sourceIp,
+          extractedIP: clientIP,
+          step: 'extracted'
+        });
+
+        // Validate IP format with more lenient rules
+        if (!isValidIP(clientIP)) {
+          await logSecurityEvent('invalid_ip_format', clientIP, null, null, 'wordle-solver', 'warn', {
+            rawIP: sourceIp,
+            extractedIP: clientIP,
+            reason: 'Invalid IP format after extraction'
+          });
+          // Don't reject - continue without IP-based rate limiting
+        } else {
+          // Use the clean IP for rate limiting
+          const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          const { data: ipJobCount, error: ipError } = await supabase
+            .from('analysis_jobs')
+            .select('id')
+            .gte('created_at', hourAgo.toISOString())
+            .contains('input_data', { source_ip: clientIP });
+          
+          if (ipError) {
+            await logSecurityEvent('rate_limit_check_error', clientIP, null, null, 'wordle-solver', 'error', {
+              error: ipError.message,
+              type: 'ip_jobs_check'
+            });
+          } else if (ipJobCount && ipJobCount.length >= 10) {
+            await logSecurityEvent('ip_rate_limit_exceeded', clientIP, null, null, 'wordle-solver', 'warn', {
+              jobCount: ipJobCount.length,
+              limit: 10,
+              timeWindow: '1 hour'
+            });
+            return {
+              valid: false,
+              error: 'IP rate limit exceeded: Maximum 10 jobs per hour'
+            };
+          }
+        }
       }
 
       // Enhanced rate limiting for job creation (10 jobs per IP per hour)
