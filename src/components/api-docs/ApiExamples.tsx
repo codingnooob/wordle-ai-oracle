@@ -19,7 +19,7 @@ const ApiExamples = ({ baseUrl }: ApiExamplesProps) => {
           <ScrollArea className="w-full rounded border h-96">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`// Analyze a completed Wordle guess
-const response = await fetch('${baseUrl}/wordle-solver', {
+const response = await fetch('${baseUrl}', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ if (response.ok) {
     const sessionToken = result.session_token;
     
     // Check status later using both job_id and session_token
-    const statusResponse = await fetch(\`${baseUrl}/wordle-solver/status/\${jobId}/\${sessionToken}\`);
+    const statusResponse = await fetch(\`${baseUrl}/status/\${jobId}/\${sessionToken}\`);
     const statusResult = await statusResponse.json();
     console.log('Status:', statusResult.status);
   }
@@ -74,7 +74,7 @@ if (response.ok) {
 import time
 
 # Analyze a completed Wordle guess
-url = '${baseUrl}/wordle-solver'
+url = '${baseUrl}'
 data = {
     'guessData': [
         {'letter': 'C', 'state': 'absent'},
@@ -106,7 +106,7 @@ if response.status_code == 200:
         
         # Poll for completion using both job_id and session_token
         while True:
-            status_response = requests.get(f'{baseUrl}/wordle-solver/status/{job_id}/{session_token}')
+            status_response = requests.get(f'{baseUrl}/status/{job_id}/{session_token}')
             status_result = status_response.json()
             
             if status_result['status'] in ['complete', 'failed', 'partial']:
@@ -127,7 +127,7 @@ else:
           <ScrollArea className="w-full rounded border h-80">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`# Analyze a completed Wordle guess
-curl -X POST '${baseUrl}/wordle-solver' \\
+curl -X POST '${baseUrl}' \\
   -H 'Content-Type: application/json' \\
   -H 'X-API-Key: your-api-key' \\
   -d '{
@@ -154,10 +154,10 @@ curl -X POST '${baseUrl}/wordle-solver' \\
 # }
 
 # Check status of async job using both job_id and session_token
-curl '${baseUrl}/wordle-solver/status/123e4567-e89b-12d3-a456-426614174000/abcd1234-5678-90ef-ghij-klmnopqrstuv'
+curl '${baseUrl}/status/123e4567-e89b-12d3-a456-426614174000/abcd1234-5678-90ef-ghij-klmnopqrstuv'
 
 # Example error response for validation failure
-curl -X POST '${baseUrl}/wordle-solver' \\
+curl -X POST '${baseUrl}' \\
   -H 'Content-Type: application/json' \\
   -d '{
     "guessData": [

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Play, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getApiConfig } from '@/utils/apiConfig';
 
 interface ApiTesterProps {
   baseUrl: string;
@@ -66,6 +67,8 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     setResponse(null);
 
     try {
+      const apiConfig = getApiConfig();
+      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -82,7 +85,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
       };
 
-      const res = await fetch(`${baseUrl}`, {
+      const res = await fetch(apiConfig.analyze, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
@@ -152,9 +155,8 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     }
 
     try {
-      // URL encode the session token to handle special characters
-      const encodedSessionToken = encodeURIComponent(sessionToken);
-      const statusRes = await fetch(`${baseUrl}/status/${jobId}/${encodedSessionToken}`);
+      const apiConfig = getApiConfig();
+      const statusRes = await fetch(apiConfig.status(jobId, sessionToken));
       const statusData = await statusRes.json();
       
       if (statusData.status === 'complete' || statusData.status === 'failed' || statusData.status === 'partial') {
@@ -215,9 +217,8 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
 
     setLoading(true);
     try {
-      // URL encode the session token to handle special characters
-      const encodedSessionToken = encodeURIComponent(demoSessionToken.trim());
-      const statusRes = await fetch(`${baseUrl}/status/${demoJobId.trim()}/${encodedSessionToken}`);
+      const apiConfig = getApiConfig();
+      const statusRes = await fetch(apiConfig.status(demoJobId.trim(), demoSessionToken.trim()));
       const statusData = await statusRes.json();
       setResponse({ status: statusRes.status, data: statusData });
       

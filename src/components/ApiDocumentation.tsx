@@ -6,13 +6,11 @@ import ApiStatusEndpoint from './api-docs/ApiStatusEndpoint';
 import ApiExamples from './api-docs/ApiExamples';
 import ApiTester from './api-docs/ApiTester';
 
-const ApiDocumentation = () => {
-  // Always use the direct Supabase Edge Function URL
-  const getBaseUrl = () => {
-    return 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
-  };
+import { getDisplayUrl } from '@/utils/apiConfig';
 
-  const baseUrl = getBaseUrl();
+const ApiDocumentation = () => {
+  // Use environment-aware API configuration
+  const baseUrl = getDisplayUrl();
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

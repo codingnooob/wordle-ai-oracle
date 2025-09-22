@@ -76,6 +76,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/wordle-solver/status/(.*)",
+      "destination": "/api/wordle-solver/status/$1"
+    },
+    {
+      "source": "/api/wordle-solver",
+      "destination": "/api/wordle-solver/index"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }
