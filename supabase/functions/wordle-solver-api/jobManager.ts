@@ -47,26 +47,36 @@ export async function storeResults(jobId: string, solutions: any[], confidence: 
 
 export async function getJobStatus(jobId: string, sessionToken: string) {
   try {
+    // Use the new secure function that doesn't expose session tokens
     const { data: job, error: jobError } = await supabase
-      .rpc('get_job_status_secure', {
+      .rpc('get_job_status_secure_v2', {
         job_id_param: jobId,
         session_token_param: sessionToken
       });
     
     if (jobError || !job || job.length === 0) {
+      console.log('Job status fetch failed:', jobError || 'No data returned');
       return null;
     }
     
     const jobData = job[0];
+    
+    // Get analysis results separately for complete data
+    const { data: results } = await supabase
+      .from('analysis_results')
+      .select('solutions, confidence_score, processing_status')
+      .eq('job_id', jobId)
+      .maybeSingle();
+    
     return {
       job_id: jobData.job_id,
       status: jobData.status,
       created_at: jobData.created_at,
       completed_at: jobData.completed_at,
       estimated_completion_seconds: jobData.estimated_completion_seconds,
-      solutions: jobData.solutions || [],
-      confidence_score: jobData.confidence_score || 0,
-      processing_status: jobData.processing_status || 'initializing',
+      solutions: results?.solutions || [],
+      confidence_score: results?.confidence_score || 0,
+      processing_status: results?.processing_status || 'initializing',
       error_message: jobData.error_message
     };
   } catch (error) {

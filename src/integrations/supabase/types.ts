@@ -87,13 +87,6 @@ export type Database = {
             foreignKeyName: "analysis_results_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
-            referencedRelation: "job_status_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "analysis_results_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
             referencedRelation: "job_status_view"
             referencedColumns: ["id"]
           },
@@ -229,13 +222,6 @@ export type Database = {
             foreignKeyName: "session_tokens_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
-            referencedRelation: "job_status_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_tokens_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
             referencedRelation: "job_status_view"
             referencedColumns: ["id"]
           },
@@ -270,33 +256,6 @@ export type Database = {
       }
     }
     Views: {
-      job_status_public: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          error_message: string | null
-          estimated_completion_seconds: number | null
-          id: string | null
-          status: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          estimated_completion_seconds?: number | null
-          id?: string | null
-          status?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          estimated_completion_seconds?: number | null
-          id?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
       job_status_view: {
         Row: {
           completed_at: string | null
