@@ -83,6 +83,13 @@ export type Database = {
             referencedRelation: "analysis_jobs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "analysis_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_status_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       api_usage: {
@@ -207,7 +214,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      job_status_view: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          estimated_completion_seconds: number | null
+          id: string | null
+          session_token_hint: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string | null
+          session_token_hint?: never
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string | null
+          session_token_hint?: never
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_api_usage_data: {
@@ -244,6 +280,20 @@ export type Database = {
         }[]
       }
       get_job_status_secure: {
+        Args: { job_id_param: string; session_token_param: string }
+        Returns: {
+          completed_at: string
+          confidence_score: number
+          created_at: string
+          error_message: string
+          estimated_completion_seconds: number
+          job_id: string
+          processing_status: string
+          solutions: Json
+          status: string
+        }[]
+      }
+      get_job_status_with_token: {
         Args: { job_id_param: string; session_token_param: string }
         Returns: {
           completed_at: string
