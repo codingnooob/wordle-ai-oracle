@@ -416,6 +416,10 @@ export type Database = {
         Args: { job_id: string; token: string }
         Returns: boolean
       }
+      verify_token_security: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
