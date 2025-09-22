@@ -411,7 +411,7 @@ serve(async (req) => {
           }
           
           // Generate proper status URL based on request origin
-          const requestOrigin = req.headers.get('origin') || '';
+          const encodedSessionToken = encodeURIComponent(job.session_token);
           const currentUrl = new URL(req.url);
           const isCustomDomain = !currentUrl.hostname.includes('supabase.co');
           
@@ -561,6 +561,7 @@ serve(async (req) => {
           }
           
           // Generate proper status URL based on request origin
+          const encodedSessionToken = encodeURIComponent(job.session_token);
           const currentUrl = new URL(req.url);
           const isCustomDomain = !currentUrl.hostname.includes('supabase.co');
           
