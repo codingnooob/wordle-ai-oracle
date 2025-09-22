@@ -49,31 +49,62 @@ export async function getJobStatus(jobId: string, sessionToken: string) {
   try {
     console.log(`[JOB MANAGER] Getting status for job: ${jobId}`);
     
-    // Use the updated secure function that now returns all required fields including analysis results
-    const { data: job, error: jobError } = await supabase
-      .rpc('get_job_status_secure_v2', {
-        job_id_param: jobId,
-        session_token_param: sessionToken
-      });
+    // Validate inputs
+    if (!jobId || !sessionToken) {
+      console.log('[JOB MANAGER] Invalid inputs: jobId or sessionToken missing');
+      return null;
+    }
     
-    if (jobError || !job || job.length === 0) {
+    if (sessionToken.length < 32) {
+      console.log('[JOB MANAGER] Invalid session token format');
+      return null;
+    }
+    
+    // Direct table query instead of RPC function to avoid JWT context issues
+    // Query analysis_jobs with validation conditions
+    const { data: jobData, error: jobError } = await supabase
+      .from('analysis_jobs')
+      .select(`
+        id,
+        status,
+        created_at,
+        completed_at,
+        estimated_completion_seconds,
+        error_message,
+        analysis_results (
+          solutions,
+          confidence_score,
+          processing_status
+        )
+      `)
+      .eq('id', jobId)
+      .eq('session_token', sessionToken)
+      .gt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // Within 2 hours
+      .gt('expires_at', new Date().toISOString()) // Not expired
+      .single();
+    
+    if (jobError || !jobData) {
       console.log('[JOB MANAGER] Job status fetch failed:', jobError || 'No data returned');
       return null;
     }
     
-    const jobData = job[0];
     console.log(`[JOB MANAGER] Job status: ${jobData.status}`);
     
-    // The updated function now returns all required fields including analysis results
+    // Extract analysis results (there should be at most one)
+    const analysisResult = Array.isArray(jobData.analysis_results) 
+      ? jobData.analysis_results[0] || {}
+      : jobData.analysis_results || {};
+    
+    // Return formatted response matching the original structure
     return {
-      job_id: jobData.job_id,
+      job_id: jobData.id,
       status: jobData.status,
       created_at: jobData.created_at,
       completed_at: jobData.completed_at,
       estimated_completion_seconds: jobData.estimated_completion_seconds,
-      solutions: jobData.solutions || [],
-      confidence_score: jobData.confidence_score || 0,
-      processing_status: jobData.processing_status || 'initializing',
+      solutions: analysisResult.solutions || [],
+      confidence_score: analysisResult.confidence_score || 0,
+      processing_status: analysisResult.processing_status || 'initializing',
       error_message: jobData.error_message
     };
   } catch (error) {
