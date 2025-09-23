@@ -5,7 +5,12 @@
 
 The Wordle AI Oracle provides a powerful REST API for integrating Wordle solving capabilities into your applications.
 
-**Base URL**: `https://wordlesolver.ai/api`
+### Endpoint Options
+
+**Web Application Usage** (with smart fallback): `https://wordlesolver.ai/api`
+**Direct Server Usage** (reliable for terminal/curl): `https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api`
+
+> **💡 Recommendation**: Use our [JavaScript/Python SDKs](#sdk-clients) for automatic smart fallback handling, or the direct Supabase URL for reliable terminal/server usage.
 
 ### POST /wordle-solver
 Analyze Wordle guesses and get AI-powered word predictions.
@@ -56,11 +61,58 @@ Analyze Wordle guesses and get AI-powered word predictions.
 ### GET /wordle-solver/status/{job_id}
 Check the status of async analysis jobs.
 
-## 💻 Code Examples
+## 📦 SDK Clients
 
-### JavaScript/Node.js
+### JavaScript/Node.js SDK
+
 ```javascript
-const response = await fetch('https://wordlesolver.ai/api/wordle-solver', {
+const WordleAIClient = require('./wordleai-client');
+
+const client = new WordleAIClient({
+  apiKey: 'your-api-key' // optional
+});
+
+const result = await client.analyze([
+  { letter: 'C', state: 'absent' },
+  { letter: 'R', state: 'present' },
+  { letter: 'A', state: 'present' },
+  { letter: 'N', state: 'absent' },
+  { letter: 'E', state: 'correct' }
+]);
+
+console.log('Solutions:', result.solutions);
+```
+
+### Python SDK
+
+```python
+from wordleai_client import WordleAIClient
+
+client = WordleAIClient(api_key="your-api-key")  # optional
+
+result = client.analyze([
+    {"letter": "C", "state": "absent"},
+    {"letter": "R", "state": "present"},
+    {"letter": "A", "state": "present"},
+    {"letter": "N", "state": "absent"},
+    {"letter": "E", "state": "correct"}
+])
+
+print("Solutions:", result["solutions"])
+```
+
+**SDK Benefits:**
+- ✅ Automatic smart fallback (tries custom domain, falls back to Supabase)
+- ✅ Works in both browser and server environments
+- ✅ Built-in error handling and retry logic
+- ✅ Async job polling included
+
+## 💻 Direct API Examples
+
+### JavaScript/Node.js (Direct API)
+```javascript
+// Use direct Supabase URL for reliable server usage
+const response = await fetch('https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -88,11 +140,12 @@ if (response.ok) {
 }
 ```
 
-### Python
+### Python (Direct API)
 ```python
 import requests
 
-response = requests.post('https://wordlesolver.ai/api/wordle-solver', json={
+# Use direct Supabase URL for reliable server usage
+response = requests.post('https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api', json={
     'guessData': [
         {'letter': 'C', 'state': 'absent'},
         {'letter': 'R', 'state': 'present'},
@@ -113,9 +166,10 @@ else:
     print('API Error:', error_result['error'])
 ```
 
-### cURL
+### cURL (Direct API)
 ```bash
-curl -X POST 'https://wordlesolver.ai/api/wordle-solver' \
+# Use direct Supabase URL for reliable terminal usage
+curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api' \
   -H 'Content-Type: application/json' \
   -d '{
     "guessData": [
