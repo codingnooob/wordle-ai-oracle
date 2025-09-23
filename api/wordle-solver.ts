@@ -13,6 +13,21 @@ export default async function handler(request: Request): Promise<Response> {
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.VERCEL_ENV
   });
+
+  // REDIRECT SOLUTION: For production custom domain, redirect to direct Supabase URL
+  const url = new URL(request.url);
+  const hostname = url.hostname;
+  
+  // If this is a custom domain (not Vercel preview or localhost), redirect to working endpoint
+  if (!hostname.includes('vercel.app') && !hostname.includes('localhost') && hostname !== '127.0.0.1') {
+    const directSupabaseUrl = 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
+    
+    console.log(`[VERCEL EDGE] Custom domain detected (${hostname}), redirecting to: ${directSupabaseUrl}`);
+    
+    // For all requests, redirect to the working Supabase endpoint
+    const redirectUrl = `${directSupabaseUrl}${url.search}`;
+    return Response.redirect(redirectUrl, 302);
+  }
   
   // Set CORS headers
   const corsHeaders = {
