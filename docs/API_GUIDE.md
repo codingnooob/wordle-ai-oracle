@@ -37,8 +37,18 @@ Analyze Wordle guesses and get AI-powered word predictions.
 }
 ```
 
-**Parameters:**
-- `maxResults` (optional): Number of word suggestions to return. Default: 15. Use 0 for unlimited results (up to 1000 for performance).
+## 📋 Request Parameters
+
+- **`guessData`** (required): Array of letter objects with state information
+  - Each letter must have `state`: `"correct"`, `"present"`, or `"absent"`
+  - No `"unknown"` states allowed - complete your analysis first
+- **`wordLength`** (required): Target word length (3-15 letters)
+- **`excludedLetters`** (optional): Array of letters to exclude from results
+- **`maxResults`** (optional): Number of word suggestions to return
+  - **Default**: `15` (when omitted)
+  - **Specific number**: e.g., `25` for exactly 25 results
+  - **Unlimited**: `0` returns all valid results (up to 1000 safety limit)
+- **`apiKey`** (optional): Your API key for higher rate limits
 
 **Success Response:** *(Example response - actual results may vary based on ML analysis)*
 ```json
@@ -126,9 +136,29 @@ else:
     print('API Error:', error_result['error'])
 ```
 
-### cURL (Direct API)
+### cURL Examples
+
+**Get default results (15 solutions):**
 ```bash
-# Use direct Supabase URL for reliable terminal usage
+# Omit maxResults to get the default 15 results
+curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "guessData": [
+      {"letter": "C", "state": "absent"},
+      {"letter": "R", "state": "present"},
+      {"letter": "A", "state": "present"},
+      {"letter": "N", "state": "absent"},
+      {"letter": "E", "state": "correct"}
+    ],
+    "wordLength": 5,
+    "excludedLetters": ["T", "I", "S"]
+  }'
+```
+
+**Get specific number of results:**
+```bash
+# Get exactly 50 results
 curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -145,8 +175,43 @@ curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solve
   }'
 ```
 
+**Get all available results (unlimited):**
+```bash
+# Set maxResults to 0 for all valid solutions (up to 1000 safety limit)
+curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "guessData": [
+      {"letter": "C", "state": "absent"},
+      {"letter": "R", "state": "present"},
+      {"letter": "A", "state": "present"},
+      {"letter": "N", "state": "absent"},
+      {"letter": "E", "state": "correct"}
+    ],
+    "wordLength": 5,
+    "excludedLetters": ["T", "I", "S"],
+    "maxResults": 0
+  }'
+```
+
+## 📈 Common Usage Patterns
+
+### For Interactive Applications
+- **Default behavior**: Omit `maxResults` or set to `15` for quick responses
+- **Pagination**: Request `maxResults: 0` and implement frontend pagination
+- **Progressive loading**: Start with 15, load more on demand
+
+### For Batch Processing
+- **Complete analysis**: Use `maxResults: 0` to get all valid solutions
+- **Performance consideration**: Large result sets may take longer to process
+
+### For API Integration
+- **Rate limit friendly**: Use smaller `maxResults` values for frequent requests
+- **Comprehensive results**: Use `maxResults: 0` for thorough analysis
+
 ## 🔧 API Features
 - **Rate Limiting**: 100 requests per hour per API key/IP
+- **Flexible Results**: Configure result count with `maxResults` (default: 15, unlimited: 0, safety cap: 1000)
 - **Async Processing**: Long-running analyses return job IDs for status checking
 - **Multiple Response Modes**: Immediate results (< 10s) or async processing
 - **Letter States**: Support for correct, present, and absent letter states only
