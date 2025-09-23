@@ -150,7 +150,7 @@ serve(async (req) => {
           });
         }
         
-        const { guessData, wordLength, excludedLetters, positionExclusions, apiKey, responseMode = 'auto', maxResults = 15 } = requestBody;
+        const { guessData, wordLength, excludedLetters, positionExclusions, apiKey, responseMode = 'auto', maxResults = 15, minProbability = 1.0 } = requestBody;
         
         // Extract client info for rate limiting with better IP handling
         const rawIP = req.headers.get('x-forwarded-for') || 
@@ -217,7 +217,7 @@ serve(async (req) => {
           // For immediate mode, continue without job tracking
           if (responseMode === 'immediate') {
             try {
-              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults);
+              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults, minProbability);
               const solutions = result?.solutions || [];
               const confidence = result?.confidence || 0.0;
               
@@ -284,7 +284,7 @@ serve(async (req) => {
           
           try {
             secureLog('Starting immediate analysis', { jobId: job.id }, 'info');
-            const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults);
+            const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults, minProbability);
             const analysisResult = await Promise.race([
               analysisPromise,
               new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout after 8 seconds')), 8000))
@@ -360,7 +360,7 @@ serve(async (req) => {
           const backgroundTask = async () => {
             try {
               secureLog('Background task started', { jobId: job.id }, 'info');
-              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults);
+              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults, minProbability);
               
               // Validate result object structure before accessing properties
               if (!result || typeof result !== 'object' || result instanceof Error) {
@@ -449,7 +449,7 @@ serve(async (req) => {
         }
         
         try {
-          const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults);
+          const analysisPromise = performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults, minProbability);
           const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Analysis timeout after 10 seconds')), 10000)
           );
@@ -505,7 +505,7 @@ serve(async (req) => {
           const backgroundTask = async () => {
             try {
               secureLog('Auto mode background task started', { jobId: job.id }, 'info');
-              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults);
+              const result = await performMLAnalysis(sanitizedGuessData, wordLength, excludedLetters || [], positionExclusions || {}, maxResults, minProbability);
               
               // Validate result object structure before accessing properties
               if (!result || typeof result !== 'object' || result instanceof Error) {

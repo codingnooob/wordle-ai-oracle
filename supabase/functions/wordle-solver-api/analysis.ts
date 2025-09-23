@@ -274,7 +274,7 @@ function calculateWordQuality(word: string): number {
 let webScraperFailureCount = 0;
 const MAX_SCRAPER_FAILURES = 3;
 
-export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}, maxResults: number = 15): Promise<AnalysisResult> {
+export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}, maxResults: number = 15, minProbability: number = 1.0): Promise<AnalysisResult> {
   console.log('Starting unified ML analysis...');
   
   // Basic error boundary - catch ALL errors and return fallback
@@ -297,7 +297,8 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
             wordLength,
             excludedLetters,
             positionExclusions,
-            maxResults
+            maxResults,
+            minProbability
           }
         });
 
