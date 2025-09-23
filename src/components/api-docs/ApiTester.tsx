@@ -443,7 +443,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
               placeholder="15 (default), 0 for unlimited"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Default: 15 results. Use 0 for all valid solutions (up to 1000 safety limit).
+              Default: 15 results. Use 0 for all valid solutions.
             </p>
           </div>
 
