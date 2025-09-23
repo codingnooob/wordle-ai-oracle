@@ -33,6 +33,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const [positionExclusions, setPositionExclusions] = useState<Record<string, number[]>>({});
   const [apiKey, setApiKey] = useState('');
   const [maxResults, setMaxResults] = useState('');
+  const [minProbability, setMinProbability] = useState('');
   const [responseMode, setResponseMode] = useState<'immediate' | 'async' | 'auto'>('immediate');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
@@ -79,7 +80,8 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l),
         responseMode,
         ...(Object.keys(positionExclusions).length > 0 && { positionExclusions }),
-        ...(maxResults.trim() !== '' && { maxResults: parseInt(maxResults.trim()) })
+        ...(maxResults.trim() !== '' && { maxResults: parseInt(maxResults.trim()) }),
+        ...(minProbability.trim() !== '' && { minProbability: parseFloat(minProbability.trim()) })
       };
 
       console.log('[API Test] Sending request with smart client');
@@ -251,6 +253,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     setExcludedLetters('');
     setPositionExclusions({});
     setMaxResults('');
+    setMinProbability('');
     setResponse(null);
     setPollingJobId(null);
     setPollingToken(null);
@@ -271,6 +274,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     setExcludedLetters('T,I,S');
     setPositionExclusions({ 'R': [1], 'A': [2] });
     setMaxResults('25');
+    setMinProbability('0.1');
     setWordLength(5);
   };
 
@@ -437,13 +441,29 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
               id="maxResults"
               type="number"
               min="0"
-              max="1000"
               value={maxResults}
               onChange={(e) => setMaxResults(e.target.value)}
               placeholder="15 (default), 0 for unlimited"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Default: 15 results. Use 0 for all valid solutions.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="minProbability">Min Probability (optional)</Label>
+            <Input
+              id="minProbability"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value={minProbability}
+              onChange={(e) => setMinProbability(e.target.value)}
+              placeholder="1.0 (default), 0.01 for 1% minimum"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Only applies when maxResults is 0. Filter results by minimum probability (0.0-1.0).
             </p>
           </div>
 

@@ -33,6 +33,7 @@ Analyze Wordle guesses and get AI-powered word predictions.
   "wordLength": 5,
   "excludedLetters": ["T", "I", "S"],
   "maxResults": 15,
+  "minProbability": 1.0,
   "apiKey": "optional-api-key"
 }
 ```
@@ -47,7 +48,11 @@ Analyze Wordle guesses and get AI-powered word predictions.
 - **`maxResults`** (optional): Number of word suggestions to return
   - **Default**: `15` (when omitted)
   - **Specific number**: e.g., `25` for exactly 25 results
-  - **Unlimited**: `0` returns all valid results (up to 1000 safety limit)
+  - **Unlimited**: `0` returns all valid results
+- **`minProbability`** (optional): Minimum probability threshold for results (0.0-1.0)
+  - **Default**: `1.0` (only return high-confidence results)
+  - **Lower values**: e.g., `0.05` for 5% minimum probability
+  - **Only applies when `maxResults: 0`**: Filters unlimited results by quality
 - **`apiKey`** (optional): Your API key for higher rate limits
 
 **Success Response:** *(Example response - actual results may vary based on ML analysis)*
@@ -96,7 +101,8 @@ const response = await fetch('https://tctpfuqvpvkcdidyiowu.supabase.co/functions
     ],
     wordLength: 5,
     excludedLetters: ['T', 'I', 'S'],
-    maxResults: 25 // Get 25 results instead of default 15
+    maxResults: 25, // Get 25 results instead of default 15
+    minProbability: 0.1 // Only show results with 10%+ probability
   })
 });
 
@@ -124,7 +130,8 @@ response = requests.post('https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/
     ],
     'wordLength': 5,
     'excludedLetters': ['T', 'I', 'S'],
-    'maxResults': 0  # Get all available results (unlimited)
+    'maxResults': 0,  # Get all available results (unlimited)
+    'minProbability': 0.05  # Filter to 5%+ probability results
 })
 
 if response.status_code == 200:
@@ -177,7 +184,7 @@ curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solve
 
 **Get all available results (unlimited):**
 ```bash
-# Set maxResults to 0 for all valid solutions (up to 1000 safety limit)
+# Set maxResults to 0 for all valid solutions with quality filtering
 curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -190,7 +197,8 @@ curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solve
     ],
     "wordLength": 5,
     "excludedLetters": ["T", "I", "S"],
-    "maxResults": 0
+    "maxResults": 0,
+    "minProbability": 0.01
   }'
 ```
 
@@ -211,7 +219,7 @@ curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solve
 
 ## 🔧 API Features
 - **Rate Limiting**: 100 requests per hour per API key/IP
-- **Flexible Results**: Configure result count with `maxResults` (default: 15, unlimited: 0, safety cap: 1000)
+- **Flexible Results**: Configure result count with `maxResults` (default: 15, unlimited: 0) and quality filtering with `minProbability`
 - **Async Processing**: Long-running analyses return job IDs for status checking
 - **Multiple Response Modes**: Immediate results (< 10s) or async processing
 - **Letter States**: Support for correct, present, and absent letter states only
