@@ -21,8 +21,7 @@ const ApiEndpoints = ({ baseUrl }: ApiEndpointsProps) => {
         <Alert>
           <Globe className="h-4 w-4" />
           <AlertDescription>
-            <strong>Quick Guide:</strong> Use the custom domain for web apps, direct Supabase URL for terminal/server usage, 
-            or our SDK for automatic smart fallback handling.
+            <strong>Quick Guide:</strong> Use the custom domain for web apps, or the direct Supabase URL for reliable terminal/server usage.
           </AlertDescription>
         </Alert>
 
@@ -120,50 +119,6 @@ const ApiEndpoints = ({ baseUrl }: ApiEndpointsProps) => {
             </CardContent>
           </Card>
 
-          {/* SDK Usage */}
-          <Card className="border-purple-200 bg-purple-50/50">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-purple-600" />
-                <CardTitle className="text-lg">SDK Usage</CardTitle>
-                <Badge variant="secondary">Best of Both Worlds</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="font-mono text-sm bg-white p-3 rounded border">
-                WordleAIClient() // Handles endpoints automatically
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-green-700 flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4" />
-                    Pros
-                  </h4>
-                  <ul className="space-y-1 text-green-600">
-                    <li>• Automatic fallback</li>
-                    <li>• Works everywhere</li>
-                    <li>• Error handling included</li>
-                    <li>• Easy to use</li>
-                  </ul>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-red-700 flex items-center gap-1">
-                    <XCircle className="h-4 w-4" />
-                    Limitations
-                  </h4>
-                  <ul className="space-y-1 text-red-600">
-                    <li>• Additional dependency</li>
-                    <li>• Slightly larger payload</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-purple-100 p-3 rounded text-sm">
-                <strong>Best for:</strong> Production applications, reliable integrations, when you want convenience
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Usage Recommendation Table */}
@@ -181,10 +136,6 @@ const ApiEndpoints = ({ baseUrl }: ApiEndpointsProps) => {
             <div className="p-3 flex justify-between items-center">
               <span className="font-medium">Server-to-Server Integration</span>
               <Badge className="bg-green-100 text-green-800">Direct Supabase</Badge>
-            </div>
-            <div className="p-3 flex justify-between items-center">
-              <span className="font-medium">Production Application</span>
-              <Badge className="bg-purple-100 text-purple-800">SDK Client</Badge>
             </div>
             <div className="p-3 flex justify-between items-center">
               <span className="font-medium">Quick Testing</span>

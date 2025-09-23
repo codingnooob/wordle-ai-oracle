@@ -89,8 +89,8 @@
 - Async processing for complex analyses
 - Detailed error messages and status codes
 
-### SDKs and Libraries
-- JavaScript/Node.js SDK
+### Client Examples
+- JavaScript/Node.js integration examples
 - Python integration examples
 - cURL examples for testing
 - Comprehensive documentation
