@@ -78,7 +78,8 @@ export default async function handler(request: Request): Promise<Response> {
     // Construct target URL for Supabase Edge Function  
     const targetUrl = `${SUPABASE_FUNCTION_URL}/${jobId}/${sessionToken}`;
     
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdHBmdXF2cHZrY2RpZHlpb3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTM4NzksImV4cCI6MjA2NjQ4OTg3OX0.fneT0q0WENCgPK5JV_VlSqxYKy_q5oX97SMOLdEhcPA';
+    // Check for environment variables (no fallback to force proper configuration)
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
     
     if (!supabaseAnonKey) {
       console.error('[VERCEL EDGE STATUS] Missing SUPABASE_ANON_KEY environment variable');

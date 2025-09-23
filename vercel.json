@@ -15,10 +15,16 @@
   },
   "functions": {
     "api/wordle-solver.ts": {
-      "runtime": "edge"
+      "runtime": "edge",
+      "regions": ["iad1"]
     },
     "api/status.ts": {
-      "runtime": "edge"
+      "runtime": "edge",
+      "regions": ["iad1"]
+    },
+    "api/health.ts": {
+      "runtime": "edge",
+      "regions": ["iad1"]
     }
   },
   "headers": [
@@ -58,6 +64,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health"
+    },
     {
       "source": "/api/wordle-solver/status/:jobId/:sessionToken",
       "destination": "/api/status?jobId=$jobId&sessionToken=$sessionToken"
