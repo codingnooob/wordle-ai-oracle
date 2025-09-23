@@ -34,7 +34,8 @@ const response = await fetch('${baseUrl}', {
       { letter: 'E', state: 'correct' }
     ],
     wordLength: 5,
-    excludedLetters: ['T', 'I', 'S']
+    excludedLetters: ['T', 'I', 'S'],
+    maxResults: 25  // Get 25 results instead of default 15
   })
 });
 
@@ -84,7 +85,8 @@ data = {
         {'letter': 'E', 'state': 'correct'}
     ],
     'wordLength': 5,
-    'excludedLetters': ['T', 'I', 'S']
+    'excludedLetters': ['T', 'I', 'S'],
+    'maxResults': 50  # Get 50 results instead of default 15
 }
 
 response = requests.post(url, json=data)
@@ -139,7 +141,39 @@ curl -X POST '${baseUrl}' \\
       {"letter": "E", "state": "correct"}
     ],
     "wordLength": 5,
+    "excludedLetters": ["T", "I", "S"],
+    "maxResults": 0
+  }'
+
+# Get default results (15 solutions) - omit maxResults
+curl -X POST '${baseUrl}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "guessData": [
+      {"letter": "C", "state": "absent"},
+      {"letter": "R", "state": "present"},
+      {"letter": "A", "state": "present"},
+      {"letter": "N", "state": "absent"},
+      {"letter": "E", "state": "correct"}
+    ],
+    "wordLength": 5,
     "excludedLetters": ["T", "I", "S"]
+  }'
+
+# Get specific number of results (e.g., 50)
+curl -X POST '${baseUrl}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "guessData": [
+      {"letter": "C", "state": "absent"},
+      {"letter": "R", "state": "present"},
+      {"letter": "A", "state": "present"},
+      {"letter": "N", "state": "absent"},
+      {"letter": "E", "state": "correct"}
+    ],
+    "wordLength": 5,
+    "excludedLetters": ["T", "I", "S"],
+    "maxResults": 50
   }'
 
 # Example successful response (actual results may vary):

@@ -32,6 +32,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const [excludedLetters, setExcludedLetters] = useState('');
   const [positionExclusions, setPositionExclusions] = useState<Record<string, number[]>>({});
   const [apiKey, setApiKey] = useState('');
+  const [maxResults, setMaxResults] = useState('');
   const [responseMode, setResponseMode] = useState<'immediate' | 'async' | 'auto'>('immediate');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
@@ -77,7 +78,8 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         wordLength,
         excludedLetters: excludedLetters.split(',').map(l => l.trim().toUpperCase()).filter(l => l),
         responseMode,
-        ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
+        ...(Object.keys(positionExclusions).length > 0 && { positionExclusions }),
+        ...(maxResults.trim() !== '' && { maxResults: parseInt(maxResults.trim()) })
       };
 
       console.log('[API Test] Sending request with smart client');
@@ -248,6 +250,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     setGuessData(Array(wordLength).fill(null).map(() => ({ letter: '', state: 'absent' as const })));
     setExcludedLetters('');
     setPositionExclusions({});
+    setMaxResults('');
     setResponse(null);
     setPollingJobId(null);
     setPollingToken(null);
@@ -267,6 +270,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     setGuessData(exampleData);
     setExcludedLetters('T,I,S');
     setPositionExclusions({ 'R': [1], 'A': [2] });
+    setMaxResults('25');
     setWordLength(5);
   };
 
@@ -424,6 +428,22 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
               {responseMode === 'immediate' && "Forces synchronous processing. Returns results immediately or timeout error."}
               {responseMode === 'async' && "Always processes in background. Returns job ID for status polling."}
               {responseMode === 'auto' && "Tries immediate processing first, falls back to async if needed."}
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="maxResults">Max Results (optional)</Label>
+            <Input
+              id="maxResults"
+              type="number"
+              min="0"
+              max="1000"
+              value={maxResults}
+              onChange={(e) => setMaxResults(e.target.value)}
+              placeholder="15 (default), 0 for unlimited"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Default: 15 results. Use 0 for all valid solutions (up to 1000 safety limit).
             </p>
           </div>
 

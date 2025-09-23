@@ -29,7 +29,19 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-2">Request Body</h3>
+          <h3 className="text-lg font-semibold mb-2">Request Parameters</h3>
+          <div className="text-sm space-y-2 mb-4">
+            <div><code>guessData</code> (required) - Array of letter objects with state information</div>
+            <div><code>wordLength</code> (required) - Target word length (3-15 letters)</div>
+            <div><code>excludedLetters</code> (optional) - Array of letters to exclude from results</div>
+            <div><code>maxResults</code> (optional) - Number of results to return. Default: 15, Use 0 for unlimited (up to 1000)</div>
+            <div><code>responseMode</code> (optional) - Processing mode: immediate/async/auto</div>
+            <div><code>apiKey</code> (optional) - Your API key for higher rate limits</div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Request Body Example</h3>
           <ScrollArea className="w-full rounded border h-64">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
 {`{
@@ -46,6 +58,7 @@ const ApiAnalyzeEndpoint = ({ baseUrl }: ApiAnalyzeEndpointProps) => {
     "R": [1], 
     "A": [2]
   },
+  "maxResults": 25,
   "responseMode": "immediate",
   "apiKey": "your-api-key-here"
 }`}
