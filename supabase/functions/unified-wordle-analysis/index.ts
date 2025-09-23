@@ -393,13 +393,14 @@ serve(async (req) => {
   }
 
   try {
-    const { guessData, wordLength, excludedLetters = [], positionExclusions = {} } = await req.json();
+    const { guessData, wordLength, excludedLetters = [], positionExclusions = {}, maxResults = 15 } = await req.json();
 
     console.log('=== Unified Wordle Analysis ===');
     console.log('Input guess data:', guessData);
     console.log('Word length:', wordLength);
     console.log('Excluded letters:', excludedLetters);
     console.log('Position exclusions:', positionExclusions);
+    console.log('Max results:', maxResults);
 
     // Validate inputs
     if (!Array.isArray(guessData) || !wordLength || wordLength < 3 || wordLength > 8) {
@@ -474,9 +475,17 @@ serve(async (req) => {
       };
     });
 
-    // Sort by probability and return top results
+    // Sort by probability and return results
     const sortedWords = scoredWords.sort((a, b) => b.probability - a.probability);
-    const finalResults = sortedWords.slice(0, 20);
+    
+    // Apply maxResults limit with safety cap
+    let finalResults;
+    if (maxResults === 0) {
+      // Unlimited results with reasonable safety cap
+      finalResults = sortedWords.slice(0, Math.min(1000, sortedWords.length));
+    } else {
+      finalResults = sortedWords.slice(0, maxResults);
+    }
     
     console.log('Final unified analysis results:', finalResults.slice(0, 5));
 

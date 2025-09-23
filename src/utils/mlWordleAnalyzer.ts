@@ -83,7 +83,8 @@ class MLWordleAnalyzer {
           guessData,
           wordLength,
           excludedLetters: Array.from(excludedLetters),
-          positionExclusions: positionExclusionsObj
+          positionExclusions: positionExclusionsObj,
+          maxResults: 0 // Get all available results, let frontend handle pagination
         }
       });
 

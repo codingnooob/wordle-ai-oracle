@@ -6,6 +6,7 @@ export interface WordleAPIRequest {
   positionExclusions?: Record<string, number[]>;
   responseMode?: 'immediate' | 'async' | 'auto';
   apiKey?: string;
+  maxResults?: number; // Number of results to return. Default: 15. Use 0 for unlimited (up to 1000).
 }
 
 export interface WordleSolution {

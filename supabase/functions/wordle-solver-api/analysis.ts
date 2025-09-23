@@ -274,7 +274,7 @@ function calculateWordQuality(word: string): number {
 let webScraperFailureCount = 0;
 const MAX_SCRAPER_FAILURES = 3;
 
-export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}): Promise<AnalysisResult> {
+export async function performMLAnalysis(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}, maxResults: number = 15): Promise<AnalysisResult> {
   console.log('Starting unified ML analysis...');
   
   // Basic error boundary - catch ALL errors and return fallback
@@ -291,14 +291,15 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
     try {
       console.log('Attempting unified-wordle-analysis edge function...');
       
-      const unifiedResponse = await supabase.functions.invoke('unified-wordle-analysis', {
-        body: {
-          guessData,
-          wordLength,
-          excludedLetters,
-          positionExclusions
-        }
-      });
+        const unifiedResponse = await supabase.functions.invoke('unified-wordle-analysis', {
+          body: {
+            guessData,
+            wordLength,
+            excludedLetters,
+            positionExclusions,
+            maxResults
+          }
+        });
 
       if (unifiedResponse.data && unifiedResponse.data.solutions && Array.isArray(unifiedResponse.data.solutions)) {
         console.log(`✅ Unified analysis returned ${unifiedResponse.data.solutions.length} solutions`);
@@ -358,11 +359,11 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
       webScraperFailureCount++;
       
       // Use fallback corpus instead of failing
-      return performAnalysisWithFallbackCorpus(guessData, wordLength, excludedLetters, positionExclusions);
+      return performAnalysisWithFallbackCorpus(guessData, wordLength, excludedLetters, positionExclusions, maxResults);
     }
     
     // Step 5: Perform analysis with scraped words (legacy method)
-    return performAnalysisWithWordList(scrapedData.words, guessData, wordLength, excludedLetters, positionExclusions);
+    return performAnalysisWithWordList(scrapedData.words, guessData, wordLength, excludedLetters, positionExclusions, maxResults);
     
   } catch (error) {
     console.error('Analysis failed, using fallback:', error.message);
@@ -371,7 +372,7 @@ export async function performMLAnalysis(guessData: any[], wordLength: number, ex
 }
 
 // Perform analysis with fallback word corpus when web scraper fails
-async function performAnalysisWithFallbackCorpus(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}): Promise<AnalysisResult> {
+async function performAnalysisWithFallbackCorpus(guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}, maxResults: number = 15): Promise<AnalysisResult> {
   console.log('Using fallback word corpus for analysis');
   
   // Comprehensive fallback word lists by length
@@ -386,11 +387,11 @@ async function performAnalysisWithFallbackCorpus(guessData: any[], wordLength: n
   const wordList = fallbackCorpus[wordLength as keyof typeof fallbackCorpus] || fallbackCorpus[5];
   console.log(`Using fallback corpus with ${wordList.length} words for length ${wordLength}`);
   
-  return performAnalysisWithWordList(wordList, guessData, wordLength, excludedLetters, positionExclusions);
+  return performAnalysisWithWordList(wordList, guessData, wordLength, excludedLetters, positionExclusions, maxResults);
 }
 
 // Core analysis logic that works with any word list
-function performAnalysisWithWordList(words: string[], guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}): AnalysisResult {
+function performAnalysisWithWordList(words: string[], guessData: any[], wordLength: number, excludedLetters: string[] = [], positionExclusions: Record<string, number[]> = {}, maxResults: number = 15): AnalysisResult {
   try {
     console.log('Analyzing constraints from guess data...');
     const guessHistory = [{ guess: guessData, timestamp: Date.now() }];
@@ -438,7 +439,14 @@ function performAnalysisWithWordList(words: string[], guessData: any[], wordLeng
       }
     }).sort((a, b) => b.probability - a.probability);
     
-    const solutions = scoredWords.slice(0, 20); // Limit to top 20 results
+    // Apply maxResults limit with safety cap
+    let solutions;
+    if (maxResults === 0) {
+      // Unlimited results with reasonable safety cap
+      solutions = scoredWords.slice(0, Math.min(1000, scoredWords.length));
+    } else {
+      solutions = scoredWords.slice(0, maxResults);
+    }
     
     return {
       solutions,

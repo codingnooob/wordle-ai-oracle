@@ -32,9 +32,13 @@ Analyze Wordle guesses and get AI-powered word predictions.
   ],
   "wordLength": 5,
   "excludedLetters": ["T", "I", "S"],
+  "maxResults": 15,
   "apiKey": "optional-api-key"
 }
 ```
+
+**Parameters:**
+- `maxResults` (optional): Number of word suggestions to return. Default: 15. Use 0 for unlimited results (up to 1000 for performance).
 
 **Success Response:** *(Example response - actual results may vary based on ML analysis)*
 ```json
@@ -81,7 +85,8 @@ const response = await fetch('https://tctpfuqvpvkcdidyiowu.supabase.co/functions
       { letter: 'E', state: 'correct' }
     ],
     wordLength: 5,
-    excludedLetters: ['T', 'I', 'S']
+    excludedLetters: ['T', 'I', 'S'],
+    maxResults: 25 // Get 25 results instead of default 15
   })
 });
 
@@ -108,7 +113,8 @@ response = requests.post('https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/
         {'letter': 'E', 'state': 'correct'}
     ],
     'wordLength': 5,
-    'excludedLetters': ['T', 'I', 'S']
+    'excludedLetters': ['T', 'I', 'S'],
+    'maxResults': 0  # Get all available results (unlimited)
 })
 
 if response.status_code == 200:
@@ -134,7 +140,8 @@ curl -X POST 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solve
       {"letter": "E", "state": "correct"}
     ],
     "wordLength": 5,
-    "excludedLetters": ["T", "I", "S"]
+    "excludedLetters": ["T", "I", "S"],
+    "maxResults": 50
   }'
 ```
 
