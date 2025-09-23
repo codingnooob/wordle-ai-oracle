@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Play, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getApiConfig, getFallbackConfig } from '@/utils/apiConfig';
+import { smartApiClient, makeAnalyzeRequest, makeStatusRequest } from '@/utils/smartApiClient';
 
 interface ApiTesterProps {
   baseUrl: string;
@@ -42,8 +42,6 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const [showStatusDemo, setShowStatusDemo] = useState(false);
   const [demoJobId, setDemoJobId] = useState('');
   const [demoSessionToken, setDemoSessionToken] = useState('');
-  const [usingFallback, setUsingFallback] = useState(false);
-
   const updateWordLength = (newLength: number) => {
     setWordLength(newLength);
     const newGuessData = Array(newLength).fill(null).map((_, i) => 
@@ -66,14 +64,9 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
   const testApi = async () => {
     setLoading(true);
     setResponse(null);
-    setUsingFallback(false);
 
     try {
-      const apiConfig = getApiConfig();
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
+      const headers: Record<string, string> = {};
 
       if (apiKey.trim()) {
         headers['X-API-Key'] = apiKey.trim();
@@ -87,30 +80,13 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
         ...(Object.keys(positionExclusions).length > 0 && { positionExclusions })
       };
 
-      console.log('[API Test] Sending request to:', apiConfig.analyze);
+      console.log('[API Test] Sending request with smart client');
       console.log('[API Test] Request body:', requestBody);
 
-      let res = await fetch(apiConfig.analyze, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody)
-      });
-
-      // If custom domain fails, try fallback to direct Supabase
-      if (!res.ok && apiConfig.analyze !== getFallbackConfig().analyze) {
-        console.log('[API Test] Custom domain failed, trying fallback to direct Supabase...');
-        setUsingFallback(true);
-        
-        const fallbackConfig = getFallbackConfig();
-        res = await fetch(fallbackConfig.analyze, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody)
-        });
-      }
+      const res = await makeAnalyzeRequest(requestBody, apiKey.trim() ? { 'X-API-Key': apiKey.trim() } : undefined);
 
       console.log('[API Test] Response status:', res.status);
-      console.log('[API Test] Response headers:', Object.fromEntries(res.headers.entries()));
+      console.log('[API Test] Using fallback:', smartApiClient.isUsingFallback());
 
       // Check if response is empty or not JSON
       const responseText = await res.text();
@@ -186,9 +162,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
     }
 
     try {
-      // Use the same endpoint type (custom/fallback) that worked for the initial request
-      const config = usingFallback ? getFallbackConfig() : getApiConfig();
-      const statusRes = await fetch(config.status(jobId, sessionToken));
+      const statusRes = await makeStatusRequest(jobId, sessionToken);
       const statusData = await statusRes.json();
       
       if (statusData.status === 'complete' || statusData.status === 'failed' || statusData.status === 'partial') {
@@ -249,9 +223,7 @@ const ApiTester = ({ baseUrl }: ApiTesterProps) => {
 
     setLoading(true);
     try {
-      // Use the same endpoint type based on current fallback state
-      const config = usingFallback ? getFallbackConfig() : getApiConfig();
-      const statusRes = await fetch(config.status(demoJobId.trim(), demoSessionToken.trim()));
+      const statusRes = await makeStatusRequest(demoJobId.trim(), demoSessionToken.trim());
       const statusData = await statusRes.json();
       setResponse({ status: statusRes.status, data: statusData });
       
