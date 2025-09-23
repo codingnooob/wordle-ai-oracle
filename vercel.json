@@ -14,10 +14,10 @@
     "NODE_ENV": "production"
   },
   "functions": {
-    "api/wordle-solver.ts": {
+    "api/wordle-solver/index.ts": {
       "runtime": "edge"
     },
-    "api/wordle-solver/status.ts": {
+    "api/wordle-solver/status/index.ts": {
       "runtime": "edge"
     }
   },
@@ -60,23 +60,19 @@
   "rewrites": [
     {
       "source": "/api/wordle-solver/status/:jobId/:sessionToken",
-      "destination": "/api/wordle-solver/status.js?jobId=$jobId&sessionToken=$sessionToken"
+      "destination": "/api/wordle-solver/status?jobId=$jobId&sessionToken=$sessionToken"
     },
     {
       "source": "/api/wordle-solver/status/:path*",
-      "destination": "/api/wordle-solver/status.js"
+      "destination": "/api/wordle-solver/status"
     },
     {
       "source": "/api/wordle-solver/:path*",
-      "destination": "/api/wordle-solver.js"
+      "destination": "/api/wordle-solver"
     },
     {
       "source": "/api/wordle-solver",
-      "destination": "/api/wordle-solver.js"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/$path*"
+      "destination": "/api/wordle-solver"
     },
     {
       "source": "/((?!api|_next|favicon\\.ico).*)",
