@@ -1,11 +1,18 @@
-export const runtime = 'edge';
+export const config = {
+  runtime: 'edge',
+};
 
 const SUPABASE_FUNCTION_URL = 'https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api';
 
 export default async function handler(request: Request): Promise<Response> {
-  // Debug logging
-  console.log(`[API DEBUG] Wordle Solver API called: ${request.method} ${request.url}`);
-  console.log(`[API DEBUG] Headers:`, Object.fromEntries(request.headers.entries()));
+  // Enhanced debug logging for deployment verification
+  console.log(`[VERCEL EDGE] Function executing - ${new Date().toISOString()}`);
+  console.log(`[VERCEL EDGE] Request: ${request.method} ${request.url}`);
+  console.log(`[VERCEL EDGE] Environment check:`, {
+    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV
+  });
   
   // Set CORS headers
   const corsHeaders = {
@@ -27,11 +34,14 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   try {
+    // Log successful function execution
+    console.log(`[VERCEL EDGE] Edge function is executing properly`);
+    
     // Forward request to Supabase Edge Function
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdHBmdXF2cHZrY2RpZHlpb3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTM4NzksImV4cCI6MjA2NjQ4OTg3OX0.fneT0q0WENCgPK5JV_VlSqxYKy_q5oX97SMOLdEhcPA';
     
     if (!supabaseAnonKey) {
-      console.error('[API ERROR] Missing SUPABASE_ANON_KEY environment variable');
+      console.error('[VERCEL EDGE] Missing SUPABASE_ANON_KEY environment variable');
       return new Response(JSON.stringify({ 
         error: 'Configuration error',
         message: 'Missing Supabase configuration'
@@ -68,8 +78,8 @@ export default async function handler(request: Request): Promise<Response> {
 
     const body = request.method !== 'GET' ? await request.text() : undefined;
 
-    console.log(`[API DEBUG] Forwarding to: ${SUPABASE_FUNCTION_URL}`);
-    console.log(`[API DEBUG] Request method: ${request.method}`);
+    console.log(`[VERCEL EDGE] Forwarding to: ${SUPABASE_FUNCTION_URL}`);
+    console.log(`[VERCEL EDGE] Request method: ${request.method}`);
     
     const response = await fetch(SUPABASE_FUNCTION_URL, {
       method: request.method,
@@ -77,15 +87,15 @@ export default async function handler(request: Request): Promise<Response> {
       body,
     });
 
-    console.log(`[API DEBUG] Supabase response status: ${response.status}`);
-    console.log(`[API DEBUG] Supabase response content-type: ${response.headers.get('Content-Type')}`);
+    console.log(`[VERCEL EDGE] Supabase response status: ${response.status}`);
+    console.log(`[VERCEL EDGE] Supabase response content-type: ${response.headers.get('Content-Type')}`);
 
     const data = await response.text();
     
     // Ensure we're returning JSON, not HTML
     const contentType = response.headers.get('Content-Type') || 'application/json';
     if (contentType.includes('text/html')) {
-      console.error('[API ERROR] Received HTML response from Supabase, expected JSON');
+      console.error('[VERCEL EDGE] Received HTML response from Supabase, expected JSON');
       return new Response(JSON.stringify({ 
         error: 'Unexpected response format',
         message: 'Service temporarily unavailable'
@@ -105,11 +115,12 @@ export default async function handler(request: Request): Promise<Response> {
     });
     
   } catch (error) {
-    console.error('Edge Function API Proxy Error:', error);
+    console.error('[VERCEL EDGE] Edge Function API Proxy Error:', error);
     return new Response(JSON.stringify({ 
       error: 'API proxy failed',
       message: 'Unable to connect to analysis service',
-      environment: 'custom-domain-edge'
+      environment: 'vercel-edge-deployment',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: {
