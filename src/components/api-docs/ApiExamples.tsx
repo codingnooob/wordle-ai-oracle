@@ -128,7 +128,7 @@ else:
           <h3 className="text-lg font-semibold mb-2">cURL</h3>
           <ScrollArea className="w-full rounded border h-80">
             <pre className="bg-slate-100 p-4 text-sm whitespace-pre min-w-max">
-{`# Analyze a completed Wordle guess
+{`# Analyze a completed Wordle guess with quality filtering
 curl -X POST '${baseUrl}' \\
   -H 'Content-Type: application/json' \\
   -H 'X-API-Key: your-api-key' \\
@@ -142,7 +142,8 @@ curl -X POST '${baseUrl}' \\
     ],
     "wordLength": 5,
     "excludedLetters": ["T", "I", "S"],
-    "maxResults": 0
+    "maxResults": 0,
+    "minProbability": 5.0
   }'
 
 # Get default results (15 solutions) - omit maxResults
