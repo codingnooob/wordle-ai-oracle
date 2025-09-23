@@ -5,7 +5,6 @@ import ApiEndpoints from './api-docs/ApiEndpoints';
 import ApiAnalyzeEndpoint from './api-docs/ApiAnalyzeEndpoint';
 import ApiStatusEndpoint from './api-docs/ApiStatusEndpoint';
 import ApiExamples from './api-docs/ApiExamples';
-import ApiSdk from './api-docs/ApiSdk';
 import ApiTester from './api-docs/ApiTester';
 
 import { getDisplayUrl } from '@/utils/apiConfig';
@@ -22,13 +21,12 @@ const ApiDocumentation = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
           <TabsTrigger value="analyze">Analyze</TabsTrigger>
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="examples">Examples</TabsTrigger>
-          <TabsTrigger value="sdk">SDK</TabsTrigger>
           <TabsTrigger value="tester">Live Test</TabsTrigger>
         </TabsList>
 
@@ -50,10 +48,6 @@ const ApiDocumentation = () => {
 
         <TabsContent value="examples">
           <ApiExamples baseUrl={baseUrl} />
-        </TabsContent>
-
-        <TabsContent value="sdk">
-          <ApiSdk baseUrl={baseUrl} />
         </TabsContent>
 
         <TabsContent value="tester">
