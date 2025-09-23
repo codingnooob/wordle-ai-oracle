@@ -64,7 +64,20 @@ export default async function handler(request: Request): Promise<Response> {
     // Forward request to Supabase Edge Function
     const targetUrl = `${SUPABASE_FUNCTION_URL}/status/${jobId}/${encodeURIComponent(sessionToken)}`;
     
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdHBmdXF2cHZrY2RpZHlpb3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTM4NzksImV4cCI6MjA2NjQ4OTg3OX0.fneT0q0WENCgPK5JV_VlSqxYKy_q5oX97SMOLdEhcPA';
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdHBmdXF2cHZrY2RpZHlpb3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTM4NzksImV4cCI6MjA2NjQ4OTg3OX0.fneT0q0WENCgPK5JV_VlSqxYKy_q5oX97SMOLdEhcPA';
+    
+    if (!supabaseAnonKey) {
+      console.error('[STATUS API ERROR] Missing SUPABASE_ANON_KEY environment variable');
+      return new Response(JSON.stringify({ 
+        error: 'Configuration error',
+        message: 'Missing Supabase configuration'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    console.log(`[STATUS API DEBUG] Forwarding to: ${targetUrl}`);
     
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${supabaseAnonKey}`,
@@ -90,14 +103,30 @@ export default async function handler(request: Request): Promise<Response> {
       headers,
     });
 
+    console.log(`[STATUS API DEBUG] Supabase response status: ${response.status}`);
+    console.log(`[STATUS API DEBUG] Supabase response content-type: ${response.headers.get('Content-Type')}`);
+
     const data = await response.text();
+    
+    // Ensure we're returning JSON, not HTML
+    const contentType = response.headers.get('Content-Type') || 'application/json';
+    if (contentType.includes('text/html')) {
+      console.error('[STATUS API ERROR] Received HTML response from Supabase, expected JSON');
+      return new Response(JSON.stringify({ 
+        error: 'Unexpected response format',
+        message: 'Status service temporarily unavailable'
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     // Forward response with CORS headers
     return new Response(data, {
       status: response.status,
       headers: {
         ...corsHeaders,
-        'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        'Content-Type': 'application/json'
       }
     });
     
