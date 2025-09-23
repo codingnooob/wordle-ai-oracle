@@ -1,8 +1,11 @@
 
 import { Github, Heart, Tag } from 'lucide-react';
-import { getFormattedVersion } from '@/utils/version';
+import { getFormattedVersion, getGitInfo } from '@/utils/version';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Footer = () => {
+  const gitInfo = getGitInfo();
+  
   return (
     <footer className="border-t border-slate-200 bg-white/50 backdrop-blur-sm mt-auto" style={{ 
       paddingTop: 'clamp(1.5rem, 4vw, 2rem)',
@@ -14,10 +17,30 @@ const Footer = () => {
         paddingRight: 'clamp(0.25rem, 2vw, 1rem)'
       }}>
         <div className="flex flex-col sm:flex-row items-center justify-center text-slate-600" style={{ gap: 'clamp(1rem, 3vw, 1.5rem)' }}>
-          <div className="flex items-center" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}>
-            <Tag style={{ width: 'clamp(16px, 3vw, 20px)', height: 'clamp(16px, 3vw, 20px)' }} />
-            <span style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>{getFormattedVersion()}</span>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center cursor-help" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}>
+                  <Tag style={{ width: 'clamp(16px, 3vw, 20px)', height: 'clamp(16px, 3vw, 20px)' }} />
+                  <span style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>{getFormattedVersion()}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-sm">
+                  {gitInfo.hash && (
+                    <>
+                      <div><strong>Commit:</strong> {gitInfo.shortHash}</div>
+                      <div><strong>Branch:</strong> {gitInfo.branch}</div>
+                      {gitInfo.date && <div><strong>Date:</strong> {new Date(gitInfo.date).toLocaleDateString()}</div>}
+                      <div><strong>Build:</strong> {gitInfo.buildMode}</div>
+                      {gitInfo.isDirty && <div className="text-yellow-600">⚠️ Dirty working tree</div>}
+                    </>
+                  )}
+                  {!gitInfo.hash && <div>Static version (no Git info)</div>}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           <a 
             href="https://github.com/codingnooob/wordle-ai-oracle" 
