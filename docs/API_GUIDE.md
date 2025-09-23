@@ -5,12 +5,11 @@
 
 The Wordle AI Oracle provides a powerful REST API for integrating Wordle solving capabilities into your applications.
 
-### Endpoint Options
+### Base URL
 
-**Web Application Usage** (with smart fallback): `https://wordlesolver.ai/api`
-**Direct Server Usage** (reliable for terminal/curl): `https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api`
+**API Endpoint**: `https://tctpfuqvpvkcdidyiowu.supabase.co/functions/v1/wordle-solver-api`
 
-> **💡 Recommendation**: Use the direct Supabase URL for reliable terminal/server usage, or the custom domain for web applications.
+This endpoint works reliably across all environments - web applications, server-to-server integrations, terminal usage, and cURL commands.
 
 ### POST /wordle-solver
 Analyze Wordle guesses and get AI-powered word predictions.
