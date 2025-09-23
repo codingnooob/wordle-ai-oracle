@@ -1,5 +1,6 @@
 
-import { Github, Heart } from 'lucide-react';
+import { Github, Heart, Tag } from 'lucide-react';
+import { getFormattedVersion } from '@/utils/version';
 
 const Footer = () => {
   return (
@@ -13,6 +14,11 @@ const Footer = () => {
         paddingRight: 'clamp(0.25rem, 2vw, 1rem)'
       }}>
         <div className="flex flex-col sm:flex-row items-center justify-center text-slate-600" style={{ gap: 'clamp(1rem, 3vw, 1.5rem)' }}>
+          <div className="flex items-center" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}>
+            <Tag style={{ width: 'clamp(16px, 3vw, 20px)', height: 'clamp(16px, 3vw, 20px)' }} />
+            <span style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>{getFormattedVersion()}</span>
+          </div>
+          
           <a 
             href="https://github.com/codingnooob/wordle-ai-oracle" 
             target="_blank" 
