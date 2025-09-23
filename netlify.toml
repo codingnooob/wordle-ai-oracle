@@ -63,14 +63,18 @@
     Pragma = "no-cache"
     Expires = "0"
 
-# Edge Functions (if using Netlify Edge Functions)
+# Edge Functions
 [[edge_functions]]
-  function = "wordle-analyzer"
-  path = "/api/analyze"
+  function = "wordle-solver"
+  path = "/api/wordle-solver"
 
 [[edge_functions]]
-  function = "word-scraper"
-  path = "/api/scrape"
+  function = "status"
+  path = "/api/status/*/*"
+
+[[edge_functions]]
+  function = "health"
+  path = "/api/health"
 
 # Environment variables (set these in Netlify dashboard)
 # VITE_SUPABASE_URL
