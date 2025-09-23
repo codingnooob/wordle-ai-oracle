@@ -28,11 +28,15 @@ export default async function handler(request: Request): Promise<Response> {
 
   try {
     // Forward request to Supabase Edge Function
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdHBmdXF2cHZrY2RpZHlpb3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTM4NzksImV4cCI6MjA2NjQ4OTg3OX0.fneT0q0WENCgPK5JV_VlSqxYKy_q5oX97SMOLdEhcPA';
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'apikey': supabaseAnonKey,
     };
 
-    // Forward relevant headers
+    // Forward relevant headers from original request
     const apiKey = request.headers.get('x-api-key');
     if (apiKey) {
       headers['x-api-key'] = apiKey;
