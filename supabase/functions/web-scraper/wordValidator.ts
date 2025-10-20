@@ -1,7 +1,7 @@
 
 export function isValidEnglishWord(word: string): boolean {
-  // Must be 3-15 letters, only alphabetic characters
-  if (word.length < 3 || word.length > 15 || !/^[A-Z]+$/.test(word)) {
+  // Must be 3-10 letters, only alphabetic characters
+  if (word.length < 3 || word.length > 10 || !/^[A-Z]+$/.test(word)) {
     return false;
   }
   
@@ -39,7 +39,7 @@ export function extractWordsFromHtml(html: string): string[] {
     .replace(/&[^;]+;/g, ' '); // Remove HTML entities
   
   // Extract words using regex
-  const wordMatches = textContent.match(/\b[a-zA-Z]{3,15}\b/g) || [];
+  const wordMatches = textContent.match(/\b[a-zA-Z]{3,10}\b/g) || [];
   
   wordMatches.forEach(word => {
     const cleanWord = word.toUpperCase().trim();
