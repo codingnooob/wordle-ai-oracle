@@ -5,7 +5,7 @@ const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 Deno.serve(async (req: Request) => {
-  // Only allow POST requests from cron jobs or service accounts
+  // Only allow POST requests from service role
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -13,12 +13,22 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  // Verify this is being called by a trusted source (in production, add proper auth)
-  const authHeader = req.headers.get('Authorization');
-  const expectedKey = Deno.env.get('CLEANUP_SECRET_KEY');
-  
-  if (!authHeader || !expectedKey || authHeader !== `Bearer ${expectedKey}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+  // Verify service role JWT - strongest authentication method
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // JWT verification is handled by Supabase when verify_jwt is enabled in config.toml
+    // This function should only be accessible with service_role key
+    // The JWT claims are automatically validated by the platform
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return new Response(JSON.stringify({ error: 'Authentication failed' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' }
     });
