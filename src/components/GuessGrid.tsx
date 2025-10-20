@@ -9,8 +9,8 @@ interface GuessGridProps {
 const GuessGrid = ({ guessData, onStateChange }: GuessGridProps) => {
   return (
     <div 
-      className="flex justify-center flex-nowrap overflow-x-auto"
-      style={{ 
+      className="flex justify-center flex-nowrap"
+      style={{
         gap: 'clamp(0.125rem, 1vw, 0.5rem)',
         marginBottom: 'clamp(1rem, 4vw, 3rem)'
       }}
