@@ -173,6 +173,12 @@ class MLWordleAnalyzer {
 
     console.log(`Enhanced fallback found ${validWords.length} valid words`);
 
+    // If no words match, return empty array instead of unfiltered words
+    if (validWords.length === 0) {
+      console.log('No words satisfy constraints in enhanced fallback - returning empty results');
+      return [];
+    }
+
     // Calculate enhanced probabilities
     const scoredWords = validWords.map(word => {
       const probability = this.calculateEnhancedProbability(word, constraints, guessData);

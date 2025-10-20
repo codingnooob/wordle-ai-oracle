@@ -465,21 +465,12 @@ function performAnalysisWithWordList(words: string[], guessData: any[], wordLeng
 function createFallbackResult(errorReason: string): AnalysisResult {
   console.log('Creating fallback result due to:', errorReason);
   
-  // Provide a minimal but functional fallback
-  const commonWords = [
-    'AROSE', 'ADIEU', 'AUDIO', 'ORATE', 'RATIO', 'TEARS', 'RATES', 'OATER',
-    'REALS', 'RALES', 'LATER', 'TALES', 'LARES', 'LASER', 'EARLS', 'LEARS'
-  ];
-  
-  const fallbackSolutions = commonWords.map(word => ({
-    word,
-    probability: 0.1
-  }));
-  
+  // Return empty results with descriptive error message
   return {
-    solutions: fallbackSolutions,
-    status: 'partial',
-    confidence: 0.3,
+    solutions: [],
+    status: 'error',
+    message: `No words found that match your constraints. ${errorReason}`,
+    confidence: 0,
     error: errorReason,
     fallback: true
   };

@@ -451,15 +451,14 @@ serve(async (req) => {
     console.log(`${validWords.length} words passed all validations`);
 
     if (validWords.length === 0) {
-      console.log('No words match constraints - returning fallback results');
+      console.log('No words match constraints - returning empty results');
       return new Response(
         JSON.stringify({
-          solutions: getCommonWords(wordLength).slice(0, 10).map(word => ({
-            word,
-            probability: 50 + Math.random() * 30
-          })),
-          analysisType: 'fallback',
-          constraints: serializeConstraints(constraints)
+          solutions: [],
+          analysisType: 'no_matches',
+          message: 'No words found that satisfy all constraints. Try adjusting your guesses or constraints.',
+          constraints: serializeConstraints(constraints),
+          corpusSize: wordCorpus.length
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
