@@ -147,7 +147,7 @@ export class WebScraper {
       .replace(/&[^;]+;/g, ' ');
     
     // Single comprehensive pattern
-    const matches = textContent.match(/\b[a-zA-Z]{3,8}\b/g) || [];
+    const matches = textContent.match(/\b[a-zA-Z]{3,15}\b/g) || [];
     
     matches.forEach(word => {
       const cleanWord = word.toUpperCase().trim();
@@ -160,7 +160,7 @@ export class WebScraper {
   }
 
   private isValidWord(word: string): boolean {
-    if (word.length < 3 || word.length > 8 || !/^[A-Z]+$/.test(word)) return false;
+    if (word.length < 3 || word.length > 15 || !/^[A-Z]+$/.test(word)) return false;
     
     // More permissive vowel check
     if (!/[AEIOU]/.test(word)) return false;
