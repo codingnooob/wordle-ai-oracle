@@ -59,8 +59,8 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
       <div
         className={`text-center font-bold uppercase border-2 rounded-md transition-all duration-200 ${getStateStyles()} flex items-center justify-center`}
         style={{
-          width: 'clamp(32px, 8vw, 64px)',
-          height: 'clamp(32px, 8vw, 64px)',
+          width: 'clamp(32px, 8vw, 56px)',
+          height: 'clamp(32px, 8vw, 56px)',
           fontSize: 'clamp(0.5rem, 2vw, 1.25rem)',
           padding: '0',
           lineHeight: '1',
@@ -73,7 +73,7 @@ const LetterTile = ({ letter, state, onLetterChange, onStateChange }: LetterTile
         style={{
           marginTop: 'clamp(0.125rem, 0.5vw, 0.25rem)',
           fontSize: 'clamp(0.5rem, 1.5vw, 0.75rem)',
-          maxWidth: 'clamp(32px, 8vw, 64px)',
+          maxWidth: 'clamp(32px, 8vw, 56px)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap'
