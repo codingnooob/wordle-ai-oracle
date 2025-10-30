@@ -65,10 +65,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: securityHeaders });
   }
 
-  // Global timeout to prevent exceeding edge function limits
-  const GLOBAL_TIMEOUT = 20000; // 20 seconds hard limit
+  // Global timeout - VERY aggressive
+  const GLOBAL_TIMEOUT = 12000; // 12 seconds hard limit (reduced from 20)
   const timeoutPromise = new Promise<Response>((_, reject) => {
-    setTimeout(() => reject(new Error('Global timeout exceeded')), GLOBAL_TIMEOUT);
+    setTimeout(() => reject(new Error('Global timeout')), GLOBAL_TIMEOUT);
   });
 
   const processingPromise = (async () => {
@@ -81,11 +81,10 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    secureLog('Starting optimized high-frequency web scraping...');
+    secureLog('Starting ultra-lightweight web scraping...');
     const startTime = Date.now();
 
     try {
-      // Secure input validation
       let requestData;
       try {
         requestData = await req.json();
@@ -98,37 +97,35 @@ const handler = async (req: Request): Promise<Response> => {
       const scraper = new WebScraper();
       const { words: allWords, results: scrapeResults } = await scraper.scrapeFromTargets(SCRAPING_TARGETS);
 
-      // Add fallback words if we don't have enough diversity
-      if (allWords.size < 10000) {
-        secureLog('Adding fallback content for diversity...');
-        const fallbackWords = getFallbackWords();
+      // Add fallback words to ensure minimum corpus size
+      const fallbackWords = getFallbackWords();
+      if (allWords.size < 5000) {
+        secureLog('Supplementing with fallback words...');
         fallbackWords.forEach(word => allWords.add(word));
       }
 
-      // Convert to array - use the FULL corpus without artificial selection limits
       const allWordsArray = Array.from(allWords);
       
-      // Return the full filtered corpus or apply diversity selection if needed
+      // Apply limits if needed
       const finalWords = allWordsArray.length > maxWords ? 
-        selectDiverseWords(allWordsArray, maxWords) : 
+        allWordsArray.slice(0, maxWords) : 
         allWordsArray;
       
       const processingTime = Date.now() - startTime;
       
-      // Secure response - limit exposed information
       const response: ScrapingResponse = {
         words: finalWords,
         totalWords: finalWords.length,
         totalScraped: allWordsArray.length,
         scrapeResults: scrapeResults.map(result => ({
-          source: result.source.replace(/https?:\/\/[^\/]+/g, '[DOMAIN]'), // Sanitize URLs
+          source: result.source,
           wordCount: result.wordCount,
           success: result.success
         })),
         timestamp: new Date().toISOString()
       };
 
-      secureLog(`Full corpus scraping complete: ${finalWords.length} words from ${allWordsArray.length} total scraped (${scrapeResults.length} sources) in ${processingTime}ms`);
+      secureLog(`Scraping complete: ${finalWords.length} words in ${processingTime}ms`);
 
       return new Response(JSON.stringify(response), {
         headers: { ...securityHeaders, 'Content-Type': 'application/json' },
@@ -137,7 +134,6 @@ const handler = async (req: Request): Promise<Response> => {
     } catch (error) {
       secureLog('Scraping failed:', error);
       
-      // Return enhanced fallback data with secure error handling
       const fallbackWords = getFallbackWords();
       
       const response: ScrapingResponse = {
@@ -145,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
         totalWords: fallbackWords.length,
         totalScraped: fallbackWords.length,
         scrapeResults: [],
-        error: 'Service temporarily unavailable', // Generic error message
+        error: 'Service temporarily unavailable',
         fallback: true,
         timestamp: new Date().toISOString()
       };
@@ -161,9 +157,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     return await Promise.race([processingPromise, timeoutPromise]);
   } catch (error) {
-    console.error('Request timeout or error:', error);
+    console.error('Timeout:', error);
     
-    // Return fallback on timeout
     const fallbackWords = getFallbackWords();
     const response: ScrapingResponse = {
       words: fallbackWords,
