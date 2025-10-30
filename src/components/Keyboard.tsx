@@ -7,16 +7,30 @@ interface KeyboardProps {
   excludedLetters: Set<string>;
   onLetterExclude: (letter: string) => void;
   onLetterInclude: (letter: string) => void;
+  guessData: Array<{letter: string, state: 'unknown' | 'absent' | 'present' | 'correct'}>;
 }
 
-const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: KeyboardProps) => {
+const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude, guessData }: KeyboardProps) => {
   const rows = [
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
     ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
     ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
   ];
 
+  // Calculate protected letters (those marked as present or correct in guess)
+  const protectedLetters = new Set<string>();
+  guessData.forEach(tile => {
+    if (tile.letter && (tile.state === 'present' || tile.state === 'correct')) {
+      protectedLetters.add(tile.letter.toUpperCase());
+    }
+  });
+
   const toggleLetter = (letter: string) => {
+    // Don't allow toggling protected letters
+    if (protectedLetters.has(letter)) {
+      return;
+    }
+    
     if (excludedLetters.has(letter)) {
       onLetterInclude(letter);
     } else {
@@ -52,30 +66,38 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude }: Keyboar
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.125rem, 1vw, 0.5rem)' }}>
         {rows.map((row, rowIndex) => (
           <div key={rowIndex} className="flex justify-center" style={{ gap: 'clamp(0.125rem, 0.5vw, 0.25rem)' }}>
-            {row.map((letter) => (
-              <Button
-                key={letter}
-                onClick={() => toggleLetter(letter)}
-                variant={excludedLetters.has(letter) ? "default" : "outline"}
-                size="sm"
-                className={`p-0 font-semibold transition-all duration-200 ${
-                  excludedLetters.has(letter) 
-                    ? 'bg-red-500 hover:bg-red-600 text-white' 
-                    : 'hover:bg-slate-100'
-                }`}
-                style={{ 
-                  width: 'clamp(20px, 4vw, 32px)',
-                  height: 'clamp(20px, 4vw, 32px)',
-                  fontSize: 'clamp(0.625rem, 2vw, 0.75rem)'
-                }}
-              >
-                {excludedLetters.has(letter) ? (
-                  <X style={{ width: 'clamp(8px, 2vw, 12px)', height: 'clamp(8px, 2vw, 12px)' }} />
-                ) : (
-                  letter
-                )}
-              </Button>
-            ))}
+            {row.map((letter) => {
+              const isProtected = protectedLetters.has(letter);
+              const isExcluded = excludedLetters.has(letter);
+              
+              return (
+                <Button
+                  key={letter}
+                  onClick={() => toggleLetter(letter)}
+                  variant={isExcluded ? "default" : "outline"}
+                  size="sm"
+                  disabled={isProtected}
+                  className={`p-0 font-semibold transition-all duration-200 ${
+                    isProtected
+                      ? 'bg-green-100 text-green-700 cursor-not-allowed opacity-60'
+                      : isExcluded 
+                        ? 'bg-red-500 hover:bg-red-600 text-white' 
+                        : 'hover:bg-slate-100'
+                  }`}
+                  style={{ 
+                    width: 'clamp(20px, 4vw, 32px)',
+                    height: 'clamp(20px, 4vw, 32px)',
+                    fontSize: 'clamp(0.625rem, 2vw, 0.75rem)'
+                  }}
+                >
+                  {isExcluded ? (
+                    <X style={{ width: 'clamp(8px, 2vw, 12px)', height: 'clamp(8px, 2vw, 12px)' }} />
+                  ) : (
+                    letter
+                  )}
+                </Button>
+              );
+            })}
           </div>
         ))}
       </div>

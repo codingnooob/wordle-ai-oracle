@@ -36,6 +36,31 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
     setPositionExclusions(new Map());
   }, [wordLength, setGuessData]);
 
+  // Auto-remove protected letters from excluded letters
+  useEffect(() => {
+    const protectedLetters = new Set<string>();
+    guessData.forEach(tile => {
+      if (tile.letter && (tile.state === 'present' || tile.state === 'correct')) {
+        protectedLetters.add(tile.letter.toUpperCase());
+      }
+    });
+
+    // Remove any protected letters from excluded letters
+    if (protectedLetters.size > 0) {
+      setExcludedLetters(prev => {
+        const newSet = new Set(prev);
+        let changed = false;
+        protectedLetters.forEach(letter => {
+          if (newSet.has(letter)) {
+            newSet.delete(letter);
+            changed = true;
+          }
+        });
+        return changed ? newSet : prev;
+      });
+    }
+  }, [guessData]);
+
   const handleWordInputChange = (value: string) => {
     setWordInput(value);
     
@@ -156,6 +181,7 @@ const WordleBoard = ({ wordLength, guessData, setGuessData, setSolutions, analyz
         excludedLetters={excludedLetters}
         onLetterExclude={handleLetterExclude}
         onLetterInclude={handleLetterInclude}
+        guessData={guessData}
       />
 
       <PositionExclusion
