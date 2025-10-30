@@ -11,27 +11,47 @@ export class WebScraper {
   private dynamicSources = new DynamicSourcesService();
   private enhancedScraper = new EnhancedScraper();
 
+  private cache: { words: Set<string>; timestamp: number } | null = null;
+  private readonly CACHE_TTL = 60000; // 1 minute cache
+
   async scrapeFromTargets(staticTargets: ScrapingTarget[]): Promise<{ words: Set<string>; results: ScrapeResult[] }> {
+    // Check cache first
+    if (this.cache && Date.now() - this.cache.timestamp < this.CACHE_TTL) {
+      console.log(`✨ Using cached data (${this.cache.words.size} words)`);
+      return { 
+        words: new Set(this.cache.words), 
+        results: [{ source: 'Cache', wordCount: this.cache.words.size, success: true }] 
+      };
+    }
+
     const allWords = new Set<string>();
     const scrapeResults: ScrapeResult[] = [];
-    const maxExecutionTime = 25000; // 25 seconds to stay within limits
+    const maxExecutionTime = 15000; // Reduced to 15 seconds for safety
     const startTime = Date.now();
+    const TARGET_WORD_COUNT = 50000; // Stop early if we have enough
 
     console.log('🚀 Starting optimized multi-source scraping...');
 
     try {
-      // Phase 1: Quick local scraping (high success rate sources)
-      if (Date.now() - startTime < maxExecutionTime * 0.3) {
-        const localResults = await this.localScraper.performLocalScraping();
-        localResults.words.forEach(word => allWords.add(word));
-        scrapeResults.push(...localResults.results);
-        console.log(`🏠 Local: ${localResults.words.size} words from ${localResults.results.length} sources`);
+      // Phase 1: Quick local scraping (PRIMARY source - usually enough)
+      const localResults = await this.localScraper.performLocalScraping();
+      localResults.words.forEach(word => allWords.add(word));
+      scrapeResults.push(...localResults.results);
+      console.log(`🏠 Local: ${localResults.words.size} words from ${localResults.results.length} sources`);
+
+      // Early exit if we have enough words from local sources
+      if (allWords.size >= TARGET_WORD_COUNT) {
+        console.log(`✅ Target reached with local sources (${allWords.size} words), skipping heavy scraping`);
+        this.updateCache(allWords);
+        return { words: allWords, results: scrapeResults };
       }
 
-      // Phase 2: Enhanced scraping (limited scope for performance)
-      if (Date.now() - startTime < maxExecutionTime * 0.6) {
+      // Phase 2: Only do enhanced scraping if we need more words AND have time
+      const elapsed = Date.now() - startTime;
+      if (allWords.size < TARGET_WORD_COUNT && elapsed < maxExecutionTime * 0.5) {
+        console.log(`⏱️ ${elapsed}ms elapsed, attempting limited enhanced scraping...`);
         const dynamicTargets = await this.dynamicSources.getExpandedSources();
-        const limitedTargets = dynamicTargets.slice(0, 10); // Limit for performance
+        const limitedTargets = dynamicTargets.slice(0, 5); // Reduced from 10 to 5
         
         const enhancedResults = await this.enhancedScraper.performEnhancedScraping(limitedTargets);
         enhancedResults.words.forEach(word => allWords.add(word));
@@ -39,20 +59,23 @@ export class WebScraper {
         console.log(`📚 Enhanced: ${enhancedResults.words.size} words from ${enhancedResults.results.length} sources`);
       }
 
-      // Phase 3: Search-based targets (if time permits)
-      if (Date.now() - startTime < maxExecutionTime * 0.8) {
-        const searchTargets = await this.getSearchTargets();
-        const combinedTargets = [...staticTargets, ...searchTargets].slice(0, 15); // Limit total targets
-
-        await this.processBatchedTargets(combinedTargets, allWords, scrapeResults, maxExecutionTime - (Date.now() - startTime));
-      }
-
     } catch (error) {
       console.error('Phase processing error:', error);
     }
 
-    console.log(`🎯 Multi-phase scraping complete: ${allWords.size} total words from ${scrapeResults.length} sources`);
+    // Update cache with results
+    this.updateCache(allWords);
+
+    const totalTime = Date.now() - startTime;
+    console.log(`🎯 Scraping complete: ${allWords.size} total words from ${scrapeResults.length} sources in ${totalTime}ms`);
     return { words: allWords, results: scrapeResults };
+  }
+
+  private updateCache(words: Set<string>): void {
+    this.cache = {
+      words: new Set(words),
+      timestamp: Date.now()
+    };
   }
 
   private async processBatchedTargets(

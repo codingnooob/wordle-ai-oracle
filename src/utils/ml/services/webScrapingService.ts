@@ -19,7 +19,7 @@ export class WebScrapingService {
       console.log(`Attempting full corpus web scraping (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS})...`);
       
       const { data, error } = await supabase.functions.invoke('web-scraper', {
-        body: { maxWords: 200000 } // Request full corpus up to 200K words
+        body: { maxWords: 100000 } // Reduced from 200K to 100K for better performance
       });
 
       if (error) {
