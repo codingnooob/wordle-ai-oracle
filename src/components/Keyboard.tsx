@@ -79,7 +79,7 @@ const Keyboard = ({ excludedLetters, onLetterExclude, onLetterInclude, guessData
                   disabled={isProtected}
                   className={`p-0 font-semibold transition-all duration-200 ${
                     isProtected
-                      ? 'bg-green-100 text-green-700 cursor-not-allowed opacity-60'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
                       : isExcluded 
                         ? 'bg-red-500 hover:bg-red-600 text-white' 
                         : 'hover:bg-slate-100'
