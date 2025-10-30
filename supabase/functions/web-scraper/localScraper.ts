@@ -6,26 +6,28 @@ export class LocalScraper {
   private readonly LOCAL_TARGETS: ScrapingTarget[] = [
     // High-success educational and dictionary sites
     { url: 'https://simple.wikipedia.org/wiki/Main_Page', name: 'Simple Wikipedia Main' },
-    { url: 'https://simple.wikipedia.org/wiki/List_of_basic_English_words', name: 'Basic English Words' },
     { url: 'https://www.vocabulary.com/lists/52473', name: 'Vocabulary.com Common Words' },
     
-    // Working raw word lists (high yield)
-    { url: 'https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt', name: 'Raw Word List' },
+    // Smaller, manageable word list (10K words instead of 370K)
     { url: 'https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english.txt', name: 'Google 10K Words' },
     
     // Alternative reliable sources
     { url: 'https://www.ef.com/wwen/english-resources/english-vocabulary/', name: 'EF English Vocabulary' },
     { url: 'https://simple.wikipedia.org/wiki/Oxford_English_Dictionary', name: 'Simple Wiki Dictionary' },
+    
+    // NOTE: Removed massive word lists that exceed resource limits:
+    // - words_alpha.txt (370K+ words, several MB) was causing WORKER_LIMIT errors
   ];
 
   async performLocalScraping(): Promise<{ words: Set<string>; results: Array<{ source: string; wordCount: number; success: boolean }> }> {
     const allWords = new Set<string>();
     const scrapeResults: Array<{ source: string; wordCount: number; success: boolean }> = [];
+    const MAX_WORDS_PER_SOURCE = 15000; // Limit words per source to prevent memory issues
 
     console.log('Starting optimized local web scraping...');
 
-    // Process targets in parallel batches
-    const batchSize = 3;
+    // Process targets in parallel batches with smaller batch size
+    const batchSize = 2; // Reduced from 3
     for (let i = 0; i < this.LOCAL_TARGETS.length; i += batchSize) {
       const batch = this.LOCAL_TARGETS.slice(i, i + batchSize);
       
@@ -41,7 +43,7 @@ export class LocalScraper {
                 'Accept-Language': 'en-US,en;q=0.5',
                 'Connection': 'keep-alive',
               },
-              signal: AbortSignal.timeout(8000)
+              signal: AbortSignal.timeout(6000) // Reduced from 8000
             });
 
             if (!response.ok) {
@@ -49,20 +51,29 @@ export class LocalScraper {
             }
 
             const content = await response.text();
-            const words = extractWordsFromHtml(content);
             
-            words.forEach(word => allWords.add(word));
+            // Safety check: if content is too large, only process first part
+            const maxContentSize = 500000; // 500KB max
+            const processContent = content.length > maxContentSize 
+              ? content.substring(0, maxContentSize) 
+              : content;
+            
+            const words = extractWordsFromHtml(processContent);
+            
+            // Limit words per source to prevent memory issues
+            const limitedWords = words.slice(0, MAX_WORDS_PER_SOURCE);
+            limitedWords.forEach(word => allWords.add(word));
             
             scrapeResults.push({
               source: target.name,
-              wordCount: words.length,
+              wordCount: limitedWords.length,
               success: true
             });
 
-            console.log(`✓ Local scraped ${words.length} words from ${target.name}`);
+            console.log(`✓ Local scraped ${limitedWords.length} words from ${target.name}`);
             
           } catch (error) {
-            console.error(`✗ Local scraping failed for ${target.name}:`, error);
+            console.error(`✗ Local scraping failed for ${target.name}:`, error.message);
             scrapeResults.push({
               source: target.name,
               wordCount: 0,
@@ -73,7 +84,7 @@ export class LocalScraper {
       );
       
       // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 200
     }
 
     console.log(`Local scraping complete: ${allWords.size} unique words from ${scrapeResults.length} sources`);
