@@ -3,24 +3,16 @@ import { ScrapingTarget, ScrapeResult } from './types.ts';
 import { extractWordsFromHtml } from './wordValidator.ts';
 
 export class EnhancedScraper {
-  private readonly MAX_LINKS_PER_SOURCE = 2; // Reduced from 10
-  private readonly MAX_SPIDER_DEPTH = 1; // Reduced from 2
+  private readonly MAX_LINKS_PER_SOURCE = 10;
+  private readonly MAX_SPIDER_DEPTH = 2;
 
   async performEnhancedScraping(targets: ScrapingTarget[]): Promise<{ words: Set<string>; results: ScrapeResult[] }> {
     const allWords = new Set<string>();
     const scrapeResults: ScrapeResult[] = [];
-    const maxTime = 5000; // Max 5 seconds for ALL enhanced scraping
-    const startTime = Date.now();
 
     console.log(`🔍 Starting enhanced scraping on ${targets.length} targets...`);
 
     for (const target of targets) {
-      // Check time limit
-      if (Date.now() - startTime > maxTime) {
-        console.log('⏰ Enhanced scraping time limit reached, stopping');
-        break;
-      }
-
       try {
         console.log(`📖 Enhanced scraping: ${target.name}...`);
         
@@ -28,18 +20,22 @@ export class EnhancedScraper {
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; WordBot/1.0; +Educational)',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache'
           },
-          signal: AbortSignal.timeout(3000) // Reduced from 12000 to 3000
+          signal: AbortSignal.timeout(12000)
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const html = await response.text();
         
-        // Simplified extraction - just standard words
-        const words = this.extractStandardWords(html);
+        // Enhanced word extraction
+        const words = this.extractWordsComprehensively(html);
         words.forEach(word => allWords.add(word));
         
         scrapeResults.push({
@@ -50,19 +46,19 @@ export class EnhancedScraper {
 
         console.log(`✅ Enhanced: ${words.length} words from ${target.name}`);
 
-        // SKIP spidering to save resources - it's too expensive
-        // Only spider if we have very few words AND plenty of time left
-        const timeElapsed = Date.now() - startTime;
-        if (words.length < 100 && timeElapsed < maxTime * 0.5) {
-          const discoveredWords = await this.spiderAdditionalContent(target.url, html, Math.min(2000, maxTime - timeElapsed));
-          discoveredWords.forEach(word => allWords.add(word));
-          if (discoveredWords.size > 0) {
-            console.log(`🕷️ Spidered additional ${discoveredWords.size} words from ${target.name}`);
-          }
+        // Spider additional links from this source
+        const discoveredWords = await this.spiderAdditionalContent(target.url, html);
+        discoveredWords.forEach(word => allWords.add(word));
+
+        if (discoveredWords.size > 0) {
+          console.log(`🕷️ Spidered additional ${discoveredWords.size} words from ${target.name}`);
         }
         
+        // Shorter delay for higher frequency
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
       } catch (error) {
-        console.error(`❌ Enhanced scraping failed for ${target.name}:`, error.message);
+        console.error(`❌ Enhanced scraping failed for ${target.name}:`, error);
         scrapeResults.push({
           source: target.name,
           wordCount: 0,
@@ -76,8 +72,30 @@ export class EnhancedScraper {
   }
 
   private extractWordsComprehensively(html: string): string[] {
-    // Simplified - just use standard extraction to save CPU
-    return this.extractStandardWords(html);
+    const words = new Set<string>();
+    
+    // Enhanced text extraction with multiple strategies
+    const strategies = [
+      // Strategy 1: Standard HTML text extraction
+      () => this.extractStandardWords(html),
+      // Strategy 2: Extract from JSON-LD structured data
+      () => this.extractFromStructuredData(html),
+      // Strategy 3: Extract from meta tags and attributes
+      () => this.extractFromMetaData(html),
+      // Strategy 4: Extract from alt text and titles
+      () => this.extractFromAltText(html)
+    ];
+
+    strategies.forEach(strategy => {
+      try {
+        const strategyWords = strategy();
+        strategyWords.forEach(word => words.add(word));
+      } catch (error) {
+        console.warn('Word extraction strategy failed:', error);
+      }
+    });
+
+    return Array.from(words);
   }
 
   private extractStandardWords(html: string): string[] {
@@ -165,9 +183,8 @@ export class EnhancedScraper {
     return Array.from(words);
   }
 
-  private async spiderAdditionalContent(baseUrl: string, html: string, timeLimit: number): Promise<Set<string>> {
+  private async spiderAdditionalContent(baseUrl: string, html: string): Promise<Set<string>> {
     const allWords = new Set<string>();
-    const startTime = Date.now();
     
     try {
       // Extract promising links
@@ -175,15 +192,10 @@ export class EnhancedScraper {
       const limitedLinks = links.slice(0, this.MAX_LINKS_PER_SOURCE);
       
       for (const link of limitedLinks) {
-        // Check time limit
-        if (Date.now() - startTime > timeLimit) {
-          break;
-        }
-
         try {
           const response = await fetch(link, {
             headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WordBot/1.0)' },
-            signal: AbortSignal.timeout(2000) // Reduced from 6000
+            signal: AbortSignal.timeout(6000)
           });
           
           if (response.ok) {
@@ -191,6 +203,9 @@ export class EnhancedScraper {
             const words = this.extractStandardWords(linkedHtml);
             words.forEach(word => allWords.add(word));
           }
+          
+          // Very short delay between spider requests
+          await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
           // Skip failed spider requests
           continue;

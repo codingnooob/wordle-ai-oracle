@@ -11,55 +11,48 @@ export class WebScraper {
   private dynamicSources = new DynamicSourcesService();
   private enhancedScraper = new EnhancedScraper();
 
-  private cache: { words: Set<string>; timestamp: number } | null = null;
-  private readonly CACHE_TTL = 300000; // 5 minute cache (increased from 1 min)
-
   async scrapeFromTargets(staticTargets: ScrapingTarget[]): Promise<{ words: Set<string>; results: ScrapeResult[] }> {
-    // Check cache first - CRITICAL for avoiding repeated heavy scraping
-    if (this.cache && Date.now() - this.cache.timestamp < this.CACHE_TTL) {
-      console.log(`✨ Using cached data (${this.cache.words.size} words)`);
-      return { 
-        words: new Set(this.cache.words), 
-        results: [{ source: 'Cache', wordCount: this.cache.words.size, success: true }] 
-      };
-    }
-
     const allWords = new Set<string>();
     const scrapeResults: ScrapeResult[] = [];
-    const maxExecutionTime = 8000; // Very strict 8 second limit
+    const maxExecutionTime = 25000; // 25 seconds to stay within limits
     const startTime = Date.now();
 
-    console.log('🚀 Starting minimal scraping (local only)...');
+    console.log('🚀 Starting optimized multi-source scraping...');
 
     try {
-      // ONLY do local scraping - skip everything else
-      const localResults = await this.localScraper.performLocalScraping();
-      localResults.words.forEach(word => allWords.add(word));
-      scrapeResults.push(...localResults.results);
-      console.log(`🏠 Local: ${localResults.words.size} words from ${localResults.results.length} sources`);
+      // Phase 1: Quick local scraping (high success rate sources)
+      if (Date.now() - startTime < maxExecutionTime * 0.3) {
+        const localResults = await this.localScraper.performLocalScraping();
+        localResults.words.forEach(word => allWords.add(word));
+        scrapeResults.push(...localResults.results);
+        console.log(`🏠 Local: ${localResults.words.size} words from ${localResults.results.length} sources`);
+      }
 
-      // SKIP enhanced scraping entirely - too expensive
-      // SKIP dynamic sources - too expensive
-      // SKIP search targets - too expensive
+      // Phase 2: Enhanced scraping (limited scope for performance)
+      if (Date.now() - startTime < maxExecutionTime * 0.6) {
+        const dynamicTargets = await this.dynamicSources.getExpandedSources();
+        const limitedTargets = dynamicTargets.slice(0, 10); // Limit for performance
+        
+        const enhancedResults = await this.enhancedScraper.performEnhancedScraping(limitedTargets);
+        enhancedResults.words.forEach(word => allWords.add(word));
+        scrapeResults.push(...enhancedResults.results);
+        console.log(`📚 Enhanced: ${enhancedResults.words.size} words from ${enhancedResults.results.length} sources`);
+      }
+
+      // Phase 3: Search-based targets (if time permits)
+      if (Date.now() - startTime < maxExecutionTime * 0.8) {
+        const searchTargets = await this.getSearchTargets();
+        const combinedTargets = [...staticTargets, ...searchTargets].slice(0, 15); // Limit total targets
+
+        await this.processBatchedTargets(combinedTargets, allWords, scrapeResults, maxExecutionTime - (Date.now() - startTime));
+      }
 
     } catch (error) {
-      console.error('Scraping error:', error);
+      console.error('Phase processing error:', error);
     }
 
-    // Update cache with results
-    this.updateCache(allWords);
-
-    const totalTime = Date.now() - startTime;
-    console.log(`🎯 Scraping complete: ${allWords.size} words in ${totalTime}ms`);
+    console.log(`🎯 Multi-phase scraping complete: ${allWords.size} total words from ${scrapeResults.length} sources`);
     return { words: allWords, results: scrapeResults };
-  }
-
-  private updateCache(words: Set<string>): void {
-    this.cache = {
-      words: new Set(words),
-      timestamp: Date.now()
-    };
-    console.log(`📦 Cached ${words.size} words for 5 minutes`);
   }
 
   private async processBatchedTargets(
